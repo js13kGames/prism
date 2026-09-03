@@ -7,6 +7,7 @@ import http from 'http';
 import zlib from 'zlib';
 import { chromium, firefox } from 'playwright';
 import { SOLUTIONS } from './solutions.js';
+import { startRelay } from './relay.js';
 
 const args = process.argv.slice(2), QUICK = args.includes('--quick');
 const BROWSERS = args.filter(a => /^(chromium|firefox)$/.test(a));
@@ -181,6 +182,38 @@ async function runBrowser(name) {
     await shots(page, 'lobby-offline');
     await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=go]');
   }, {}, route => { const u = route.request().url(); return u.startsWith(URL) ? route.continue() : route.abort(); });
+
+  // Two pages race through an in-process relay; PartySocket is served as a stub so the test is hermetic.
+  await test('online-race', async (page, ctx) => {
+    const relay = await startRelay();
+    const page2 = await ctx.newPage();
+    page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
+    try {
+      for (const p of [page, page2]) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); }
+      await page.click('[data-a=on]'); await page.click('[data-a=cr]');
+      await page.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+      const code = await page.$eval('#ui b', b => b.textContent);
+      await page2.click('[data-a=on]'); await page2.fill('#j', code); await page2.click('[data-a=jn]');
+      for (const p of [page, page2]) await p.waitForFunction(() => /2 players/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+      await shots(page, 'lobby-2players');
+      const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
+      if (await guest.$('[data-a=st]')) throw new Error('both pages think they are host');
+      await host.click('[data-a=st]');
+      for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+      const names = await Promise.all([page, page2].map(p => p.$eval('.h span', s => s.textContent)));
+      if (names[0] != names[1]) throw new Error('players got different levels: ' + names);
+      await guest.click('[data-a=c][data-v="1"]');
+      await drag(guest, line(5, 3, 8, 3));
+      await host.waitForFunction(() => __prism.gs()[0] && __prism.gs()[0][0] == 1, null, { timeout: 5000 });
+      await guest.click('[data-a=p]');
+      await host.waitForFunction(() => __prism.gs()[0][1], null, { timeout: 5000 });
+      await sleep(300); await shots(host, 'race-ghost');
+    } finally { relay.close(); }
+  }, {}, route => {
+    const u = route.request().url();
+    if (/partysocket.js$/.test(u)) return route.fulfill({ contentType: 'text/javascript', body: 'export class PartySocket extends WebSocket{constructor(o){super(o.protocol+"://"+o.host+"/"+o.basePath)}}' });
+    return u.startsWith(URL) ? route.continue() : route.abort();
+  });
 
   await test('resize', async page => {
     await boot(page); await openLevel(page, 0);

@@ -155,3 +155,75 @@ Opened `https://js13kgames.com/2026/online` with Playwright (networkidle). Findi
 |---|---|
 | Phase 2 first build (core game, no sound/online/generator) | 7,981 |
 | Phase 3 (test hooks, lobby guard) | 8,014 |
+
+## 4 Sound (Phase 4)
+
+- ZzFX micro (MIT, Frank Force) inlined in audio.js with a 10-entry table: tick
+  (pitched by colour: 330·2^(c/7) Hz), play, bounce, crumble, fling, flip, fail,
+  win, click, gate. Volume constant 0.3 baked in. AudioContext is created on the
+  first click/pointerdown; `sfx` is a no-op until then, so nothing throws before a
+  gesture and nothing autoplays. Mute flag persists in `prism26_progress.snd`.
+- Cost: +670 bytes zipped.
+
+## 5 Online (Phase 5)
+
+- net.js keeps `NET.imp` (PartySocket URL, discovered in 0.2) and `NET.url`
+  (relay URL template with `{room}`, **TODO until the user registers the game**).
+  These two keys are deliberately *not* `_`-prefixed so they survive mangling and
+  the browser test can point `__prism.net.url` at a local relay.
+- PartySocket is `import()`ed lazily inside `join()`; if the import fails the client
+  uses the native `WebSocket` on the same URL. With PartySocket the URL is rebuilt
+  from `host` + `basePath` (+ `protocol`) so the relay URL is used verbatim (plus
+  PartySocket's own `?_pk=` id query).
+- Relay system messages (`@id`, `+id`, `-id`) from the page text are handled:
+  `+id` triggers a re-hello so late joiners learn the room; `-id` is ignored
+  (membership is rebuilt from hellos; a stale ghost simply stops updating).
+- Host = lowest local id among known ids; only the host sees Start. Rounds use the
+  generator with a random 30-bit seed sent in `["s", id, seed, round]`.
+- Extra message `["f", id]` (fail) so a ghost unicorn disappears when its owner's
+  run fails; not in docs/06 but 20 bytes and much clearer visually.
+- Ghost sims are stepped once per animation frame (not accumulator-paced); with the
+  deterministic sim this only changes pacing on non-60 Hz displays, never the result.
+- Score line "you N – M them" implements best-of-3 informally (no automatic end).
+- Tests: `test/relay.js` is a ~40-line dependency-free WebSocket relay (RFC 6455
+  handshake + text frames, `@`/`+`/`-` system messages, `@id|` direct messages) so
+  suite B's `online-race` test drives two real pages through the real transport;
+  the PartySocket import is answered by a route with a stub that extends
+  WebSocket and applies the same host/basePath mapping. Offline-degrade test also
+  passes (status text, no console errors).
+- Known limitation (logged, not fixed): if the user configures a relay URL and a
+  player opens the lobby while offline, the browser itself may log a network error
+  for the failed dynamic import — outside our code and only on an explicit online
+  attempt without connectivity.
+
+## 6 Generator + Daily (Phase 6)
+
+- Segment library (all built from mechanics verified in the hand levels): orange
+  bridge (4 u water), yellow chain (6 u water; single long yellow crumbles under
+  the unicorn), step-up (2 u drop → red → ledge 4–5 u up, ledge starts at cx+4 which
+  sits between the rise and fall x of the 27 u/s arc), wall-climb (vine 0.4 u off
+  the wall, over the corner, h 3–5), flip-corridor (violet up, ceiling walk over
+  water, violet down onto the next platform), one-way shelf (drop → red → through
+  indigo → land → walk onto a platform at the same height), spike-run (ceiling vine
+  over a spike pit, relies on the side-flip rule). Platforms are 3 u wide so three
+  segments always fit in 32 u.
+- Selection: never the same segment twice in a row; while fewer than 3 colours are
+  required, only segments that add a new colour are eligible; loop continues until
+  cx ≥ 22 and ≥ 3 colours. Result over seeds 1–40: 3–4 required colours, 5–9 s
+  reference solutions, level strings 128–197 chars.
+- Ink = ceil(1.4 × reference) per required colour, 3 u for the others (red
+  herrings); a "shelf" also marks red as used since it needs a pad.
+- No full floor: falling into water or timing out on a pit floor are the fail modes;
+  suite A checks every seed's empty run fails.
+- Daily = level 21 with seed = days since 2026-01-01 (UTC); the select screen shows
+  the date. The Daily result is not saved (docs/05 only asks for a done flag, and
+  the flag would cost more bytes than it is worth — logged as a cut).
+
+## Size log (continued)
+
+| step | zip bytes |
+|---|---|
+| Phase 4 sound | 8,684 |
+| Phase 5 online (net.js + lobby glue) | 9,610 |
+| Phase 6 generator | 10,214 |
+| Phase 6 + ghost test hook | 10,230 |

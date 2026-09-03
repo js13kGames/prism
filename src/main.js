@@ -4,7 +4,7 @@ import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
 import { titleUI, selectUI, hudUI, winUI, lobbyUI } from './ui.js';
 import { sfx, initAudio, snd, setSnd } from './audio.js';
-import { join, send, leave, NET } from './net.js';
+import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
 
 const Q = s => document.querySelector(s), ui = Q('#ui'), cv = Q('#c'), g = cv.getContext('2d');
@@ -67,9 +67,9 @@ const act = {
   p: play, r: rewind,
   nx: () => { if (li < 19) loadLevel(li + 1); else goSelect(); },
   cr: () => openLobby(1), jn: () => openLobby((Q('#j') || {}).value), lv0: goLobby, cp: () => { try { navigator.clipboard.writeText(location.href.split('#')[0] + '#r=' + room); } catch (e) { } },
-  st: () => raceStart(),
+  st: raceStart,
 };
-ui.onclick = e => { const b = e.target.closest('[data-a]'); if (b) { initAudio(); sfx(7); act[b.dataset.a](b.dataset.v); } };
+ui.onclick = e => { const b = e.target.closest('[data-a]'); if (b) { initAudio(); sfx(8); act[b.dataset.a](b.dataset.v); } };
 onkeydown = e => {
   const k = e.key;
   if (scr == 2 || scr == 3) {
@@ -110,7 +110,7 @@ function events(r, ghost) {
     const k = e[0], c = e[1];
     if (ghost) continue;
     spawn(e[2], e[3], k == 4 ? '#ccc' : k == 5 ? COLS[(T * 7 | 0) % 7] : COLS[c], k == 5 ? 30 : k == 4 ? 12 : 5, rnd);
-    sfx(k == 0 ? 0 : k == 1 ? (c == 0 ? 2 : c == 3 ? 4 : c == 6 ? 5 : 0) : k + 1, c);
+    sfx(k == 1 ? (c == 0 ? 2 : c == 6 ? 5 : 0) : [0, 0, 4, 3, 6, 7, 9][k], c);
   }
 }
 
@@ -130,7 +130,7 @@ function frame(ts) {
 function onWin() {
   const u = used(), t = total(), star = u <= t * .6;
   if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
-  if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId, run._t); return; }
+  if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= 19 || daily, daily ? 'Daily done!' : ''));
 }
 
@@ -154,21 +154,23 @@ function render(dt) {
   drawParts(g, dt);
 }
 
-// ---- Online race (docs/06): thin glue over net.js ----
-let room = '', myId = '', ghosts = [], seed = 0, round = 0, host = 0, raceOver = 0;
+// ---- Online race (docs/06): lobby, ghosts (other players' sims run locally), best-of-3 ----
+let room = '', ghosts = [], seed = 0, round = 0, raceOver = '', score = {};
+const isHost = () => [myId(), ...ghosts.map(g => g._id)].sort()[0] == myId();
+const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost()));
 function openLobby(code) {
-  if (code === undefined) { const m = location.hash.match(/#r=(\w{4})/); if (!m) return; code = m[1]; }
-  ghosts = []; raceOver = 0;
+  if (code === undefined) { const h = location.hash.match(/#r=(w{4})/); if (!h) return; code = h[1]; }
+  ghosts = []; raceOver = ''; score = {};
   join(code, (st, data) => {
-    if (st == 'err') return show(lobbyUI(data, '', 0) );
-    if (st == 'open') { room = data.room; myId = data.id; show(lobbyUI('Connected. Share the code!', room, data.n)); }
-    if (st == 'n') show(lobbyUI(raceOver ? raceOver : 'Waiting for host to start…', room, data));
-    if (st == 'msg') onMsg(data);
-    if (st == 'close') show(lobbyUI('Reconnecting…', room, 0));
+    if (st == 'err') { room = ''; lobby(data); }
+    else if (st == 'open') { room = data.room; lobby('Connected. Share the code!'); }
+    else if (st == 'n') { ghosts = data.map(i => ghosts.find(g => g._id == i) || { _id: i, _s: [], _run: null }); if (!L || raceOver) lobby(raceOver || (isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…')); }
+    else if (st == 'msg') onMsg(data);
+    else if (st == 'close') lobby('Reconnecting…');
   });
 }
-function raceStart() { seed = (Math.random() * 1e9) | 0; round++; send(['s', seed, round]); startRound(seed); }
-function startRound(s) { seed = s; raceOver = 0; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(20, s); }
+function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0; round++; send(['s', s, round]); startRound(s); }
+function startRound(s) { seed = s; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(20, s); }
 function onMsg([type, id, ...a]) {
   let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _run: null });
   if (type == 's') startRound(a[0]);
@@ -180,11 +182,12 @@ function onMsg([type, id, ...a]) {
 }
 function raceWin(id, t) {
   if (raceOver) return;
-  raceOver = id == myId ? 'You win!' : 'Ghost ' + id + ' wins!';
-  run = null; show(lobbyUI(raceOver + ' (' + t.toFixed(2) + 's)', room, ghosts.length + 1));
+  score[id] = (score[id] || 0) + 1;
+  raceOver = (id == myId() ? 'You win' : 'Ghost ' + id + ' wins') + ' in ' + t.toFixed(2) + 's · you ' + (score[myId()] || 0) + ' – ' + (ghosts.reduce((s, g) => s + (score[g._id] || 0), 0)) + ' them';
+  run = null; lobby(raceOver);
 }
 
-window.__prism = { toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get scr() { return scr; }, get strokes() { return strokes; } };
+window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get scr() { return scr; }, get strokes() { return strokes; } };
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);

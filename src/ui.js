@@ -30,6 +30,6 @@ export function hudUI(L, col, ink, play, hint) {
 export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${extra || 'Gem got!'}</h2><p>Ink ${used.toFixed(1)} / ${total}${star ? ' ★' : ''}</p>
 <div><button data-a=bk>Levels</button>${last ? '' : '<button class=b data-a=nx>Next</button>'}</div></div>`;
 
-export const lobbyUI = (status, code, n) => `<div class=t><h2>Online race</h2><p>${status}</p>${code ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
-<div>${code ? `<button data-a=cp>Copy link</button><button class=b data-a=st>Start</button><button data-a=lv0>Leave</button>` : `<button class=b data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
+export const lobbyUI = (status, code, n, host) => `<div class=t><h2>Online race</h2><p>${status}</p>${code ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
+<div>${code ? `<button data-a=cp>Copy link</button>${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button>` : `<button class=b data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
 <button data-a=bk>Back</button></div>`;
