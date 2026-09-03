@@ -43,3 +43,69 @@ Opened `https://js13kgames.com/2026/online` with Playwright (networkidle). Findi
 - Because the relay assigns ids, our protocol's `senderId` is still generated
   locally (4 base36 chars) as docs/06 specifies, so messages are self-describing
   regardless of transport.
+
+## 1 Simulation & levels (Phase 1)
+
+- **Run state is numeric** (0 play, 1 win, 2 fail) instead of the strings in
+  docs/04/08 — ~30 bytes smaller and the tests compare against the numbers.
+- **`levels.js` uses a named export** `LEVELS` (not `export default`) so build.js can
+  strip `export ` uniformly; same effect as the docs' `const LEVELS = [...]`.
+- **Ice does not get a second gravity projection.** docs/04 step 6 says to add
+  `tangent·gravity` on blue, but gravity was already integrated in step 4 and the
+  normal-removal keeps its tangential part; adding it again doubles gravity on
+  slopes. Instead, while continuously grounded on ice the speed is rescaled each
+  frame from energy conservation (`½v² − G·g·y` constant, capped at ICEMAX), which
+  fixes the large energy loss the polyline projection causes at vertices (L11's
+  half-pipe lost ~60% of its energy without it).
+- **Paint contacts are processed before rect contacts.** A red pad drawn exactly on
+  a floor line (the natural way to draw it) was otherwise resolved by the floor
+  first, zeroing `vn` so red never bounced (L02/L13/L14). Strokes now sort first,
+  and a stroke ground surface is not overwritten by the rect under it.
+- **Wall turn-around requires `vn < -0.5`** (actually walking into it), so a unicorn
+  sliding down a wall face with `vx = 0` does not flip direction every frame.
+- **Climb side fallback:** if the unicorn's position on its side of the vine would
+  overlap a solid, it swaps to the other side of the vine before giving up and
+  reversing. This is what lets a vine drawn 0.5 u under a ceiling carry the unicorn
+  along the underside (L08) and lets a vine hugging a wall pass a ledge corner (L20).
+- **Red end caps are bumpers.** Walking into the rounded end of a red stroke that
+  sits above the floor gives `vn ≈ −4 < −3` and launches the unicorn backwards at
+  27 u/s. This follows directly from the docs/02 rule and is kept as a feature; L19's
+  red dab is positioned so it is only reached from the air.
+- **Stroke visual width is 0.5 u** (docs/01) not `2R` (docs/04); collision is against
+  the centreline at distance R, so the unicorn sinks a quarter unit into paint.
+- **Level geometry changes** (all keep the teaching intent; paper numbers were off):
+  - L03 Angles: a pad rising to the right launches *left* (its normal points up-left).
+    Pad is now `\`-shaped `[7,12.5,10,14]`; start ledge lowered to y=8 and far ledge
+    to y=9 because an 8 u drop hits the 36 u/s cap and overshoots the world.
+  - L06 Momentum: at G=40 a 9.2 u/s horizontal launch drops 5.9 u while crossing 5 u,
+    so a same-height 5 u gap is impossible. Water gap is 3 u with the far platform
+    2 u lower; red pad on a 2 u step at y=16; far ledge top y=8.
+  - L07 Vine: solution now curves over the ledge corner `(23.6,5.2)→(24.8,4.6)`; the
+    paper end point was inside the ledge (undrawable).
+  - L08 Ceiling: vine ends 1 u above the far platform (else it is blocked on both
+    sides); ink G34 (the paper solution itself is 31 u, paper budget was 28).
+  - L11 Half-pipe: the 22 u/s ice cap limits the climb-back to ~6 u, so the far ledge
+    top is y=9 (was 8), gem (30,8); an unused O4 added so the level has ≥2 colours
+    as suite A requires. Same O4 red herring on L17.
+  - L14 Up Well: red pad starts at x=11 (the unicorn lands at 11.3, before the paper
+    pad at 12); the 27 u/s bounce peaks at y≈4.4, so the indigo shelf is at y=5 from
+    x=13 (under the apex), gem (20,4).
+  - L17: second violet at x=21 (at 22 the falling unicorn clipped the overhang).
+  - L18: indigo bridge at y=14 (at 13.5 it was level with the unicorn's centre and
+    therefore passable); first violet reaches down to 13.4.
+  - L19 Spectrum: gate moved to x=27 so the unicorn dropping from the ceiling violet
+    clears the block above the gate; gem (30.5,13). Verified route uses all 7 colours.
+  - L20 Prism: the paper layout left a 1 u slot between ceiling (y=2) and gate top
+    (y=3) that the unicorn could walk through on the ceiling, bypassing the gate. The
+    ceiling is now 1.5 thick and the gate spans 1.5→14. Ink tightened to
+    `R4 O4 Y8 G7 B6 I5 V4` (≥ 1.2× the verified route on every colour).
+  - L15 Rebound: the slide's horizontal momentum carries the bounce straight into the
+    wall vine, so the indigo shelf is optional; the stored solution is blue+red+green
+    and I6 stays as an alternative.
+- **Suite A additions:** a "drawable" warning (solution segments sampled every
+  0.15 u must not pass through solids, mirroring the game's clip rule) and a
+  `--trace` mode. `tools/try.mjs` / `tools/scan.mjs` replaced the HTML authoring
+  tool for levels 15/19/20 (faster, deterministic, no browser); `tools/play.html`
+  is still provided for eyeballing.
+- Star sanity: 10 levels allow a star, 10 don't (suite A wants ≥12; logged as a
+  warning, will revisit budgets in the polish phase if bytes allow).
