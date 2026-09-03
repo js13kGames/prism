@@ -107,4 +107,31 @@ times in a row — see the table at the end of this file (filled in from
 
 ## Browser × test (three consecutive runs of the release zip)
 
-See below (appended automatically after the runs).
+| browser | test | run 1 | run 2 | run 3 |
+|---|---|---|---|---|
+| chromium | boot | pass | pass | pass |
+| chromium | screens | pass | pass | pass |
+| chromium | level1-input | pass | pass | pass |
+| chromium | undo-clear-ink | pass | pass | pass |
+| chromium | all-levels | pass | pass | pass |
+| chromium | fail-path | pass | pass | pass |
+| chromium | mobile-portrait | pass | pass | pass |
+| chromium | mobile-landscape | pass | pass | pass |
+| chromium | offline-lobby | pass | pass | pass |
+| chromium | online-race | pass | pass | pass |
+| chromium | resize | pass | pass | pass |
+| chromium | audio-gesture | pass | pass | pass |
+| firefox | boot | pass | pass | pass |
+| firefox | screens | pass | pass | pass |
+| firefox | level1-input | pass | pass | pass |
+| firefox | undo-clear-ink | pass | pass | pass |
+| firefox | all-levels | pass | pass | pass |
+| firefox | fail-path | pass | pass | pass |
+| firefox | mobile-portrait | pass | pass | pass |
+| firefox | mobile-landscape | pass | pass | pass |
+| firefox | offline-lobby | pass | pass | pass |
+| firefox | online-race | pass | pass | pass |
+| firefox | resize | pass | pass | pass |
+| firefox | audio-gesture | pass | pass | pass |
+
+Run totals: 24/24, 24/24, 24/24 (exit codes 0, 0, 0).
