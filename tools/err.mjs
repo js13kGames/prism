@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+import { spawn } from 'child_process';
+const srv = spawn('node', ['dev.js', process.argv[2] || '.'], { env: { ...process.env, PORT: '8089' }, stdio: 'ignore' });
+await new Promise(r => setTimeout(r, 600));
+const b = await chromium.launch(), p = await b.newPage({ viewport: { width: 900, height: 600 } });
+p.on('console', m => console.log('console.' + m.type(), m.text()));
+p.on('pageerror', e => console.log('pageerror:', e.message, e.stack));
+await p.goto('http://localhost:8089/'); await p.waitForTimeout(500);
+await p.click('[data-a=go]'); await p.waitForTimeout(200);
+await p.click('[data-a=lv][data-v="0"]'); await p.waitForTimeout(300);
+console.log('ui html:', (await p.evaluate(() => document.querySelector('#ui').innerHTML)).slice(0, 300));
+await p.screenshot({ path: 'test-results/dev-draw.png' });
+await b.close(); srv.kill();

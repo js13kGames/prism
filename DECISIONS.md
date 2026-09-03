@@ -109,3 +109,49 @@ Opened `https://js13kgames.com/2026/online` with Playwright (networkidle). Findi
   is still provided for eyeballing.
 - Star sanity: 10 levels allow a star, 10 don't (suite A wants ≥12; logged as a
   warning, will revisit budgets in the polish phase if bytes allow).
+
+## 2 Playable game (Phase 2)
+
+- Default selected colour is the one with the largest ink budget (the level's
+  "main" colour), not the first unlocked one: red is index 0 and is unlocked in
+  level 1 with only 6 u, which would give a new player a half-bridge.
+- Buttons use `data-a`/`data-v` attributes and one delegated click handler; keys
+  1–7 / Z / C / Space / Esc map to the same actions.
+- The canvas reserves 120 css px of height for the HUD bars so the world never sits
+  under the palette on phones; the letterbox colour is the page background.
+- Level select: 20 dots on a half-ellipse (rainbow arc) + the Daily dot inside it.
+- Fail returns to Draw automatically after 0.8 s (docs/01); the unicorn is hidden and
+  grey "poof" particles are spawned from the fail event.
+- `window.__prism` (`toScreen`, `load`, `setStrokes`, `run`, `scr`, `strokes`) is
+  always present; it is ~120 bytes minified and is what the browser suite drives.
+  It is reserved from property mangling in build.js.
+- The online race glue lives in main.js (lobby/ghost handling) so net.js stays a
+  thin transport that can be swapped for a stub.
+
+## 3 Build & browser tests (Phase 3)
+
+- Zip is written by build.js itself: one deflated entry (zopfli, 500 iterations,
+  falls back to zlib-9 if zopfli were larger), no extra fields, no directory
+  entries. `unzip -t`/`unzip -l` verify it. A Node zip *reader* in the browser test
+  inflates the artefact into a temp dir so the test exercises the real zip.
+- Roadroller `-O1` is the default build (≈5 s); `node build.js -O2` is the release
+  search (docs/07 says compare both — done in Phase 8).
+- **Playwright's Firefox does not launch from `%LOCALAPPDATA%\ms-playwright` on this
+  machine**: Windows reports `ERROR_SXS_CANT_GEN_ACTCTX` ("Dependent Assembly
+  mozglue … could not be found") for both firefox-1538 and firefox_beta-1526,
+  although the manifests are byte-identical to the stock Firefox 155 install, which
+  runs fine. Copying the same folder to `C:\ffpw\firefox` makes it launch (so it is
+  a path/policy quirk, not a corrupt download). `test/browser.test.js` falls back
+  to that copy automatically (or `PRISM_FIREFOX=<path>`), so Firefox IS tested.
+- Synthetic touch: chromium tests use real CDP touch events (`Input.dispatchTouchEvent`);
+  Firefox has no CDP, so it dispatches `PointerEvent`s with `pointerType:'touch'`.
+  `setPointerCapture` is wrapped in try/catch because synthetic pointers have no
+  active pointer id (and some browsers throw on capture during a pen/touch cancel).
+- The lobby can be opened before any level is loaded; render() now guards on `L`.
+
+## Size log (dist/prism.zip)
+
+| step | zip bytes |
+|---|---|
+| Phase 2 first build (core game, no sound/online/generator) | 7,981 |
+| Phase 3 (test hooks, lobby guard) | 8,014 |
