@@ -1,0 +1,37 @@
+<!doctype html><meta charset=utf-8><title>PRISM level authoring</title>
+<style>body{font:14px system-ui;margin:0;display:flex;flex-direction:column;height:100vh;background:#241d4a;color:#fff}
+canvas{flex:1;min-height:0}#bar{display:flex;gap:6px;padding:6px;flex-wrap:wrap;align-items:center}
+textarea{width:100%;height:60px;font:12px monospace}button{font:inherit}#out{font:12px monospace;white-space:pre;max-height:120px;overflow:auto}</style>
+<div id=bar><textarea id=lv></textarea><span>colour <select id=c></select></span><button id=load>Load</button><button id=undo>Undo</button><button id=clear>Clear</button><button id=solve>Solve-check</button><button id=exp>Export</button><span id=st></span></div>
+<canvas id=cv></canvas><div id=out></div>
+<script type=module>
+// Dev-only authoring page: serve the repo root (node dev.js) and open /tools/play.html.
+import { parseLevel, createRun, step, mkStroke, inSolid, COLS, W, H, R, hypot } from '../src/sim.js';
+import { LEVELS } from '../src/levels.js';
+import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn } from '../src/render.js';
+const Q = s => document.querySelector(s), cv = Q('#cv'), g = cv.getContext('2d');
+let L, strokes = [], cur = null, run = null, col = 0, sc, ox, oy;
+Q('#c').innerHTML = 'ROYGBIV'.split('').map((k, i) => `<option value=${i}>${k}</option>`).join('');
+Q('#c').onchange = e => col = +e.target.value;
+Q('#lv').value = location.hash ? LEVELS[+location.hash.slice(1) - 1] : LEVELS[0];
+const load = () => { L = parseLevel(Q('#lv').value); strokes = []; run = null; };
+Q('#load').onclick = load; load();
+Q('#undo').onclick = () => strokes.pop(); Q('#clear').onclick = () => strokes = [];
+Q('#solve').onclick = () => { const r = createRun(L, strokes); let n = 0; while (!step(r) && n++ < 1600); Q('#st').textContent = ['play', 'WIN', 'FAIL'][r._state] + ' at ' + r._t.toFixed(2) + 's'; run = createRun(L, strokes); };
+Q('#exp').onclick = () => Q('#out').textContent = JSON.stringify(strokes.map(s => [s._c, s._p.map(v => +v.toFixed(2))]));
+function fit() { cv.width = cv.clientWidth; cv.height = cv.clientHeight; sc = Math.min(cv.width / W, cv.height / H); ox = (cv.width - W * sc) / 2; oy = (cv.height - H * sc) / 2; }
+onresize = fit; fit();
+const wp = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left - ox) / sc, (e.clientY - b.top - oy) / sc]; };
+cv.onpointerdown = e => { const [x, y] = wp(e); cur = mkStroke(col, [x, y]); };
+cv.onpointermove = e => { if (!cur) return; const [x, y] = wp(e), p = cur._p, px = p[p.length - 2], py = p[p.length - 1], d = hypot(x - px, y - py); if (d < .15 || inSolid(L, (x + px) / 2, (y + py) / 2)) return; p.push(x, y); cur._len += d; };
+cv.onpointerup = () => { if (cur && cur._len >= .3) strokes.push(cur); cur = null; };
+let last = 0;
+(function frame(ts) {
+  if (run && !run._state) step(run);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#241d4a'; g.fillRect(0, 0, cv.width, cv.height);
+  g.setTransform(sc, 0, 0, sc, ox, oy);
+  drawWorld(g, L, run, ts / 1000); drawStrokes(g, run ? run._s : strokes, cur); drawStart(g, L._sx, L._sy, L._sd); drawGem(g, L._gx, L._gy, ts / 1000);
+  drawUnicorn(g, run ? run._u : { _x: L._sx, _y: L._sy - R, _dir: L._sd, _g: 1, _gr: 1 }, ts / 1000);
+  requestAnimationFrame(frame);
+})(0);
+</script>

@@ -52,7 +52,7 @@ function rewind() { run = null; PARTS.length = 0; hud(); }
 
 // Screens
 const goTitle = () => { scr = 0; run = null; leave(); show(titleUI(snd)); };
-const goSelect = () => { scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10), 20)); };
+const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), 20)); };
 const goLobby = () => { scr = 3; run = null; show(lobbyUI('Connecting…', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
@@ -109,7 +109,8 @@ function events(r, ghost) {
   for (const e of r._ev.splice(0)) {
     const k = e[0], c = e[1];
     if (ghost) continue;
-    spawn(e[2], e[3], k == 4 ? '#ccc' : k == 5 ? COLS[(T * 7 | 0) % 7] : COLS[c], k == 5 ? 30 : k == 4 ? 12 : 5, rnd);
+    if (k == 5) for (let i = 0; i < 7; i++) spawn(e[2], e[3], COLS[i], 6, rnd); // rainbow win burst
+    else spawn(e[2], e[3], k == 4 ? '#ccc' : COLS[c], k == 4 ? 12 : k == 6 ? 20 : 5, rnd);
     sfx(k == 1 ? (c == 0 ? 2 : c == 6 ? 5 : 0) : [0, 0, 4, 3, 6, 7, 9][k], c);
   }
 }
@@ -130,6 +131,7 @@ function frame(ts) {
 function onWin() {
   const u = used(), t = total(), star = u <= t * .6;
   if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
+  else if (daily && scr == 2) try { localStorage.prism26_daily = daily; } catch (e) { }
   if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= 19 || daily, daily ? 'Daily done!' : ''));
 }
@@ -149,7 +151,7 @@ function render(dt) {
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
     g.lineWidth = .6;
     for (let c = 0; c < 7; c++) { g.strokeStyle = COLS[c]; g.beginPath(); g.arc(16, 22, 15 - c * .6, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
-    drawUnicorn(g, { _x: 16 + Math.sin(T) * 2, _y: 5.9, _dir: 1, _g: 1, _gr: 1 }, T);
+    g.save(); g.translate(16 + Math.sin(T) * 2, 5.3); g.scale(2.2, 2.2); drawUnicorn(g, { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 1 }, T); g.restore();
   }
   drawParts(g, dt);
 }

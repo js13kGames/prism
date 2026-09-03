@@ -227,3 +227,38 @@ Opened `https://js13kgames.com/2026/online` with Playwright (networkidle). Findi
 | Phase 5 online (net.js + lobby glue) | 9,610 |
 | Phase 6 generator | 10,214 |
 | Phase 6 + ghost test hook | 10,230 |
+
+## 7 Polish (Phase 7)
+
+- Title unicorn drawn at 2.2× so it reads at phone size; rainbow win burst (7 small
+  bursts, one per colour) instead of one random colour; gate-open sparkle is 20
+  particles. Everything else on the docs' polish list (leg animation, hint timing,
+  select arc, crumble/flip visuals, poof) was already in.
+- Star budgets: L09 `G12 O6`, L10 `B18 O8`, L13 `I10 R6` (intro levels get a generous
+  budget per docs/02) so a star is achievable on 14 levels and denied on 6 — suite
+  A's ≥ 12 / ≥ 3 guidance now holds with 0 warnings.
+- Daily done flag restored (`prism26_daily = seed`, ✓ on the select dot) — 60 bytes.
+- Stopped adding features at 10.3 KB, well under the 12.7 KB polish ceiling; the
+  remaining ~3 KB is deliberate margin for bugfix PRs during the voting period.
+
+## 8 Verification (Phase 8)
+
+- `node build.js -O2` vs `-O1`: 10,283 vs 10,286 bytes — -O2 kept as the release
+  command (README documents both; either reproduces a valid zip).
+- `unzip -l` / `unzip -t` clean; central directory has exactly one entry.
+- Grep of the minified bundle: the only `http` string is the PartySocket import;
+  no `localStorage.clear`, no `console.`; keys `prism26_progress`, `prism26_daily`.
+  (The shipped HTML is roadroller-packed, so string checks are done on the
+  pre-pack minified bundle by `tools/checks.mjs`.)
+- Replay times 2.45–8.87 s across the 20 levels; the fastest (L03, L15, L10, L11,
+  L12 at ~2.5 s) are single-motion slide/bounce levels — read the traces, the gem is
+  not trivially reachable (empty paint fails on every level).
+- Suite B run three times consecutively on the release zip (chromium + firefox);
+  results appended to SUBMISSION.md.
+
+## Size log (final)
+
+| step | zip bytes |
+|---|---|
+| Phase 7 polish + daily flag | 10,246 |
+| Final release build (`-O2`) | 10,283 |
