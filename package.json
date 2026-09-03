@@ -1,0 +1,27 @@
+{
+  "name": "prism",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node test/sim.test.js && node test/browser.test.js",
+    "test:sim": "node test/sim.test.js",
+    "test:browser": "node test/browser.test.js",
+    "dev": "node dev.js"
+  },
+  "keywords": [
+    "js13k",
+    "game",
+    "unicorn",
+    "rainbow"
+  ],
+  "author": "",
+  "license": "MIT",
+  "description": "PRISM - js13kGames 2026 entry: paint rainbow physics paths for a very stupid unicorn",
+  "devDependencies": {
+    "@gfx/zopfli": "^1.0.15",
+    "playwright": "^1.62.1",
+    "roadroller": "^2.1.0",
+    "terser": "^5.51.2"
+  },
+  "type": "module"
+}

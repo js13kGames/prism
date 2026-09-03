@@ -1,0 +1,6 @@
+node_modules
+dist/*.html
+dist/size.txt
+dist/*.tmp
+test-results
+tools/discover*.js
