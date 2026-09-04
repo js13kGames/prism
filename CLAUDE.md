@@ -9,7 +9,7 @@ in `DECISIONS.md`. Never stop to ask the user — they are away.
 A draw-then-play physics puzzle game for js13kGames 2026 (theme: **Unicorns and
 Rainbows**). The player paints rainbow-coloured paths with 7 colours, each with its
 own physics, then presses Play. A dumb unicorn walks automatically; all agency is in
-the paint. 20 hand-authored levels + a seeded generator for daily/online races.
+the paint. 30 hand-authored levels + a seeded generator for daily/online races.
 
 Categories targeted with the single zip: **Desktop, Mobile, Online** (and Wavedash,
 which is just publishing the same build later).
@@ -44,7 +44,7 @@ which is just publishing the same build later).
 
 ## Priority order when cutting for size (cut from the bottom)
 
-1. Core sim + 7 colours + Draw/Play loop + 20 levels + win/lose + progress save
+1. Core sim + 7 colours + Draw/Play loop + 30 levels + win/lose + progress save
 2. Title, level select, hints, rewind/undo/clear
 3. Sound (ZzFX mini)
 4. Online race mode via relay
@@ -55,12 +55,12 @@ Never cut 1–2. If 3–6 don't fit, cut in reverse order and log it.
 
 ## Definition of done (all must be true before you stop)
 
-- [ ] `node test/sim.test.js` passes: all 20 levels solved by their stored solutions;
-      all 20 levels FAIL with empty paint; determinism check passes (two runs of the
+- [ ] `node test/sim.test.js` passes: all 30 levels solved by their stored solutions;
+      all 30 levels FAIL with empty paint; determinism check passes (two runs of the
       same replay produce byte-identical state hashes).
 - [ ] `node test/browser.test.js` passes in **both** chromium and firefox (Playwright):
       page loads, no console errors across every screen, level 1 completed via injected
-      pointer events, level 20 completed via injected solution, mobile viewport
+      pointer events, every level completed via injected solution, mobile viewport
       (390×844 and 844×390) loads and draws with touch events, online lobby opens and
       degrades cleanly with no network.
 - [ ] `node build.js` produces `dist/index.html` and `dist/prism.zip`, prints sizes,

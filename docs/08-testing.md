@@ -8,7 +8,7 @@ you stop.
 
 Imports `src/sim.js`, `src/levels.js`, `src/gen.js`, `test/solutions.js`.
 
-For each level 1–20:
+For each level 1–30:
 1. **Solvable**: `createRun(level, solution)`, step until state ≠ 'play' or t > 25.
    Assert `state === 'win'`. Print `L07 win 6.42s`.
 2. **Not trivial**: `createRun(level, [])`, same loop. Assert `state === 'fail'`.
@@ -63,7 +63,7 @@ Per browser:
    `window.__prism.load(n)`), inject `window.__prism.setStrokes(solution)`, press
    Play, wait for the win overlay, click Next. This proves the *shipped* sim matches
    the source sim after minify/roadroller (property mangling bugs show up here).
-6. **Fail path**: level 3, Play with empty paint → fail flash → back in draw phase
+6. **Fail path**: level 4 (Angles, dies on spikes in 1.6 s), Play with empty paint → fail flash → back in draw phase
    with the palette enabled, no errors.
 7. **Mobile portrait** (viewport 390×844, `hasTouch`, `isMobile` where supported):
    boot, open level 1, draw with `page.touchscreen` / dispatched pointer events of

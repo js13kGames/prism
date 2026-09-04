@@ -1,0 +1,23 @@
+<!doctype html><meta charset=utf-8><title>unicorn preview</title>
+<style>body{margin:0;background:#8fb8ff}canvas{display:block}</style>
+<canvas id=cv width=1400 height=520></canvas>
+<script type=module>
+import { drawUnicorn } from '../src/render.js';
+const g = document.querySelector('#cv').getContext('2d');
+const S = 110;
+const states = [
+  { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 1 },                       // walking
+  { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 0, _vx: 4, _vy: 5 },        // airborne
+  { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 0, _fe: 1, _vx: 4, _vy: 2 },// feather
+  { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 1, _ph: 1 },                // phasing
+  { _x: 0, _y: 0, _dir: -1, _g: 1, _gr: 1 },                       // facing left
+  { _x: 0, _y: 0, _dir: 1, _g: -1, _gr: 1 },                       // flipped
+];
+const t = +(location.hash.slice(1)) || .1;
+states.forEach((u, i) => {
+  g.setTransform(S, 0, 0, S, 120 + i * 230, 300);
+  g.fillStyle = '#ffffff44'; g.beginPath(); g.arc(0, 0, .5, 0, 7); g.fill(); // collision circle
+  g.fillStyle = '#fff8'; g.fillRect(-1.2, .5, 2.4, .05);
+  drawUnicorn(g, u, t);
+});
+</script>

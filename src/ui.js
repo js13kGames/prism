@@ -1,21 +1,20 @@
 // HTML screens as template strings. Buttons carry data-a (action) and data-v (value); main.js dispatches.
-import { COLS, PI, cos, sin } from './sim.js';
+import { COLS } from './sim.js';
 
-export const GLYPH = '↑⇒✶⋮~⇑⟳';
-const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue ice,Indigo phase,Violet flip'.split(',');
+export const GLYPH = '↑⇒✶⋮❋⇢⟳';
+const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Indigo phase,Violet flip'.split(',');
 
 export const titleUI = snd => `<div class=t><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
 <button class=b data-a=go>Play</button><div><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div></div>`;
 
-// 20 dots on a rainbow arc + a daily dot. prog = {done, stars}; daily = label string or ''.
+// Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}; daily = label string or ''.
 export function selectUI(prog, daily, n) {
   let d = '';
   for (let i = 0; i < n; i++) {
-    const a = PI * (1 - i / (n - 1)), open = !i || prog.done[i - 1];
-    d += `<button class="d${open ? '' : ' l'}${open && !prog.done[i] ? ' g' : ''}" data-a=lv data-v=${i} style="left:${50 + 47 * cos(a)}%;top:${92 - 84 * sin(a)}%;background:${open ? COLS[i % 7] : ''}">${i + 1}${prog.stars[i] ? '★' : ''}</button>`;
+    const open = !i || prog.done[i - 1];
+    d += `<button class="d${open ? '' : ' l'}${open && !prog.done[i] ? ' g' : ''}" data-a=lv data-v=${i} style="background:${open ? COLS[i % 7] : ''}">${i + 1}${prog.stars[i] ? '★' : ''}</button>`;
   }
-  if (daily) d += `<button class=d data-a=dy style="left:50%;top:75%;width:auto;padding:0 12px;background:#fff">${daily}</button>`;
-  return `<div class=t><h2>Levels</h2><div class=a>${d}</div><button data-a=bk>Back</button></div>`;
+  return `<div class=t><h2>Levels</h2><div class=a>${d}</div><div>${daily ? `<button data-a=dy>${daily}</button>` : ''}<button data-a=bk>Back</button></div></div>`;
 }
 
 // In-game HUD. ink = remaining per colour, L = level, col = selected, play = run active, hint shown until first play.

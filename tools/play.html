@@ -23,7 +23,7 @@ function fit() { cv.width = cv.clientWidth; cv.height = cv.clientHeight; sc = Ma
 onresize = fit; fit();
 const wp = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left - ox) / sc, (e.clientY - b.top - oy) / sc]; };
 cv.onpointerdown = e => { const [x, y] = wp(e); cur = mkStroke(col, [x, y]); };
-cv.onpointermove = e => { if (!cur) return; const [x, y] = wp(e), p = cur._p, px = p[p.length - 2], py = p[p.length - 1], d = hypot(x - px, y - py); if (d < .15 || inSolid(L, (x + px) / 2, (y + py) / 2)) return; p.push(x, y); cur._len += d; };
+cv.onpointermove = e => { if (!cur) return; const [x, y] = wp(e), p = cur._p, px = p[p.length - 2], py = p[p.length - 1], d = hypot(x - px, y - py); if (d < .15 || (col != 5 && inSolid(L, (x + px) / 2, (y + py) / 2))) return; p.push(x, y); cur._len += d; };
 cv.onpointerup = () => { if (cur && cur._len >= .3) strokes.push(cur); cur = null; };
 let last = 0;
 (function frame(ts) {

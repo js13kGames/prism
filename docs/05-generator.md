@@ -31,29 +31,29 @@ XOR host-chosen salt (docs/06). `rndi(a,b)` inclusive ints.
    get 3 u (so all seven are drawable, some are red herrings).
 5. Emit as the same level-string format so `parseLevel` is reused.
 
-## Segment library (each 6–10 u wide)
+## Segment library (as shipped in gen.js)
 
-Each segment lists the geometry it emits and the reference strokes (relative to
-`cx, cy`). Colour indices: R0 O1 Y2 G3 B4 I5 V6.
+Each segment lists the geometry it emits and the reference strokes. Every reference
+stroke touches the world (paint needs support, docs/02).
 
-- **gap(w=4..7)**: water `W cx 16 w 2`, then a platform at the same `cy`.
-  Ref: yellow chain or orange bridge. Requires Y or O (`w` u). Picks Y if w > 5.
-- **step-up(h=4..7)**: a ledge `R (cx+3) (cy-h) ...` reachable by red: a 2 u drop
-  first `R cx (cy+2) 3 ...` then red pad. Requires R 3 u. `cy -= h`.
-- **long-drop-bounce**: platform far below (`cy+8`), red pad, land on a higher ledge.
-  Requires R 3.
-- **wall-climb(h=5..8)**: wall + ledge on top, vine up. Requires G (h+1). `cy -= h`.
-- **spike-run(w=6)**: spikes on the floor for `w`, ceiling block above; vine along the
-  ceiling. Requires G (w+8).
-- **slide-jump**: current platform is high (needs `cy ≤ 8`, else skip); water gap 10;
-  blue ramp with lip. Requires B 14. `cy += 6`.
-- **one-way-shelf**: gem-side platform above; indigo shelf + red pad from a 2 u drop.
-  Requires I 6, R 3. `cy -= 5`.
-- **flip-corridor**: ceiling block over this span with a hanging wall at the end;
-  two violets. Requires V 3. Only if `cy ≥ 10` (so the ceiling has room).
+- **orange bridge** (7 u): 4 u water, orange bridge between the platforms. Requires O 4.
+- **yellow chain** (9 u): 6 u water, three overlapping 2.5 u yellow strokes. Requires Y.
+- **step-up** (7 u): 2 u drop onto a red pad, bounce onto a ledge 4–5 u higher.
+  Requires R 2. `cy -= 4..5`.
+- **wall-climb** (4 u): vine 0.4 u off the wall face and over the corner, h 3–5.
+  Requires G. `cy -= h`.
+- **flip-corridor** (7.5 u): ceiling block, violet up, walk over water, violet down.
+  Requires V 2.
+- **wall-phase** (8 u): a wall from the ceiling down to the platform; indigo line
+  through it at floor level. Requires I 4.4.
+- **feather-gap** (9.5 u, only if `cy < 11`): 3 u run-up with a blue dab over the
+  edge, 3.5 u of water, landing platform 4 u lower. Requires B 1.6. `cy += 4`.
+- **spike-run** (9 u): spikes in a pit, ceiling block, vine along its underside.
+  Requires G.
 
-Segment picking: weighted random, never the same segment twice in a row, and the
-level must include at least 3 distinct colours.
+Segment picking: never the same segment twice in a row; while fewer than 3 colours
+are required only segments that add a new colour are eligible; loop until `cx ≥ 22`
+and ≥ 3 colours.
 
 ## Validation
 

@@ -1,9 +1,9 @@
-# 03 — Levels
+# 03 — Levels (v2: 30 levels)
 
 ## Format
 
 Levels live in `src/levels.js` as one string each, tokens separated by `|`, fields by
-spaces. Numbers may be decimals. Keep the average level under 70 bytes of source.
+spaces. Numbers may be decimals. Keep the average level under 90 bytes of source.
 
 ```
 N <name>              level name (short)
@@ -11,22 +11,11 @@ H <hint text>         hint, ≤ 40 chars, optional
 S x y d               start: unicorn centre x, ground-top y (spawn centre at y-0.5), d = 1 or -1
 G x y                 gem centre (gem radius 0.6)
 R x y w h             solid rect (x,y = top-left)
-K x y w h             spike rect (kills)
-W x y w h             water rect (kills)
+K x y w h             spike rect (kills; counts as support for paint)
+W x y w h             water rect (kills; not support)
 T x y w h             gate rect (solid until all 7 colours touched this run)
 I <c><n> <c><n> ...   ink: colour letter (R O Y G B I V) + budget in u; omitted = locked
 ```
-
-Example (level 1):
-```
-N First Steps|H Draw a bridge, then press Play|S 2 12 1|G 28 11|R 0 12 10 6|R 22 12 10 6|I O14 R6
-```
-
-Coordinates below are **design targets**, reasoned on paper. The sim is the truth.
-After implementing the sim, build each level, run its solution, and nudge **geometry
-and ink** (not colour physics) until the stored solution passes and the empty-paint
-run fails. Keep each level's *teaching intent* intact. Where a paper solution is
-marked "author in tool", use `tools/play.html` (see bottom) to find a working one.
 
 Stored solutions live in `test/solutions.js` as arrays of strokes:
 `[colourIndex, [x0,y0, x1,y1, ...]]`. A 2-point stroke is a straight line.
@@ -35,231 +24,105 @@ Every level is checked by the test suite for:
 - stored solution wins within 25 s
 - empty paint fails (timeout, hazard, or out of world)
 - solution ink per colour ≤ budget
+- solution is drawable (no segment through solids, except indigo)
+- determinism (two runs and batched stepping give identical state hashes)
 - (logged, not enforced) the intro level's featured colour is used by the solution
 
 ## World conventions
 
 32 × 18 u, y down. A missing floor means falling out of the world = fail. Keep ≥ 1 u
 margin from edges for gems. The unicorn spawns on a rect top. Paint that overlaps
-solid rects is clipped by the drawing code, so vines "up a wall" are drawn ~0.4 u off
-the wall face.
+solid rects is clipped by the drawing code (indigo excepted), so vines "up a wall"
+are drawn ~0.25 u off the wall face — close enough to count as supported (0.3 u).
+
+Paint must be supported (docs/02 "Support"): every stroke in a solution touches the
+world or a supported stroke, or is meant to fall (level 9).
+
+Physics facts used below (measured with `tools/lab.mjs`):
+- walkable slope ≤ ~37°; steeper slopes slide
+- bounce from any drop ≥ 0.12 u rises 9–11.25 u and drifts 6 u at walk speed
+- feather glide: ~0.8 u sideways per u of drop at walk speed, ~1.8 at dash speed
+- fling off a vine end: 8 u/s along the last segment
+- the unicorn's centre is 0.5 u above the surface it walks on; spikes must sit
+  below the walking line (a spike top level with the centre kills)
 
 ---
 
-## Act 1 — Orange & Red
+## Act 1 — Orange & Red, paint needs support (1–6)
 
-### 1 · First Steps — teaches: draw, play
-- Geometry: `R 0 12 10 6 | R 22 12 10 6 | S 2 12 1 | G 28 11`
-- Ink: `O14 R6`
-- Solution: orange `[10,12, 22,12]` (12 u).
-- Empty run: walks off at x=10 → out of world → fail.
-- Hint: "Draw a bridge, then press Play"
+1. **First Steps** — draw a bridge. `O14 R6`. Solution: orange `[10,12, 22,12]`.
+2. **Ramp** — paint needs support: a slope from the floor to a ledge 5 u up. `O16 R4`.
+   Solution: orange `[11,14, 24,9]` (21°).
+3. **Boing** — red bounces when landed on. `R5 O6`. Red `[13,14, 16,14]` on the pit floor.
+4. **Angles** — tilted red aims the bounce; the pad rests on spikes. `R8 O6`.
+5. **Shelf** — floating paint falls; hang a red pad from the ledge's wall, tilted so it
+   launches right over the water. `R5 O4`. Red `[6.2,8.4, 9.6,9.6]`.
+6. **Make a Drop** — red needs a drop, so build one: a short orange ramp ends in the
+   air; the unicorn steps off it onto red. `O7 R5`.
 
-### 2 · Boing — teaches: red bounces when *landed on*
-- Geometry: `R 0 8 12 10 | R 12 14 6 4 | R 18 6 14 12 | S 2 8 1 | G 28 5`
-  (high platform top y=8 to x=12; low floor 12–18 at y=14; ledge top y=6 from x=18)
-- Ink: `R5 O6`
-- Solution: red `[13,14, 16,14]`. Unicorn drops 6 u onto it, bounces ≥ 9 u while
-  drifting right at 4 u/s, lands on the ledge. If it lands short, the stored solution
-  tilts the pad: `[13,14.2, 16,13.6]`.
-- Empty run: drops to the low floor, paces between x=12 wall and x=18 wall → timeout.
-- Hint: "Red bounces when landed on"
+## Act 2 — Yellow (7–10)
 
-### 3 · Angles — teaches: tilted red aims the bounce
-- Geometry: `R 0 6 6 12 | R 6 14 12 4 | K 8 13.5 8 .5 | R 22 7 10 11 | S 2 6 1 | G 28 6`
-  (spikes on the pit floor 8–16; a red pad drawn over them shields them)
-- Ink: `R8 O6`
-- Solution: red `[6.5,14, 9.5,12.5]` (tilted up-right). Unicorn falls 8 u onto it and
-  launches up-right to the far ledge. Tune the angle in the tool.
-- Empty run: lands on spikes → fail.
-- Hint: "Angled red launches sideways"
+7. **Long Way** — chain of 2.5 u yellow strokes over 16 u of water. `Y30 O6 R4`.
+8. **Trapdoor** — a yellow bridge that crumbles under the unicorn onto a pedestal. `Y8 O4`.
+9. **Drawbridge** — an orange bar rests only on a yellow stub; when the stub crumbles
+   the bar (and the unicorn) drop onto two pillars over spikes, and the unicorn runs
+   back under the start ledge to the gem. `Y3 O16`.
+10. **Momentum** — orange speed carries across water; a red pad on a step bounces up
+    to the far ledge. `O6 R5 Y10`.
 
-## Act 2 — Yellow
+## Act 3 — Green (11–14)
 
-### 4 · Long Way — teaches: yellow has lots of ink but crumbles 0.6 s after touch
-- Geometry: `R 0 12 8 6 | R 24 12 8 6 | W 8 15 16 3 | S 2 12 1 | G 29 11`
-- Ink: `Y30 O6 R4`
-- The trap: one 16 u yellow bridge takes 4 s to cross at 4 u/s but crumbles 0.6 s
-  after first touch → the unicorn drowns. The lesson: crumbling is **per stroke**, so
-  chain short strokes. Each stroke only needs to survive 0.6 s ≈ 2.4 u of walking.
-- Solution: seven yellow strokes of ~2.4 u with 0.2 u overlaps:
-  `[8,12,10.5,12] [10.3,12,12.8,12] [12.6,12,15.1,12] [14.9,12,17.4,12] [17.2,12,19.7,12] [19.5,12,22,12] [21.8,12,24.2,12]`.
-  Alternative the player may find: orange run-up so the crossing is faster.
-- Hint: "Yellow crumbles 0.6s after touch"
+11. **Vine** — climb a wall and over the corner. `G14 O4`.
+12. **Ceiling** — vine along the underside of a ceiling over spikes. `G34 R4`.
+13. **Fling** — a vertical vine throws the unicorn into a chimney gem. `G12 O6`.
+14. **Rebound** — drop onto red, bounce onto a ledge, vine up the wall. `R4 G4 O4`.
 
-### 5 · Trapdoor — teaches: the crumble is a tool (timing)
-- Geometry: `R 0 9 12 9 | R 12 14 8 4 | R 18 9 2 1 | R 20 4 4 14 | R 15 12 2 1 | K 12 13.5 3 .5 | K 17 13.5 3 .5 | S 2 9 1 | G 16 11`
-  (left platform top y=9 to x=12; a chamber 12–20 with spikes on its floor and a safe
-  pedestal 15–17 at y=12; a small shelf 18–20 at y=9; wall 20–24)
-- Ink: `Y8 O4`
-- Solution: yellow `[12,9, 18,9]`. The unicorn steps on at x=12; 0.6 s later it is at
-  x≈14.4 and the bridge crumbles; it falls onto the pedestal (15–17) → gem.
-  The exact drop point depends on the crumble timer, so the pedestal is 2 u wide.
-- Empty run: walks off at x=12 → spikes → fail.
-- Hint: "It crumbles. Use that."
+## Act 4 — Blue (15–18)
 
-### 6 · Momentum — teaches: orange speed carries off a ledge
-- Geometry: `R 0 12 10 6 | W 10 16 5 2 | R 15 12 6 6 | R 21 14 5 4 | R 26 6 6 12 | S 2 12 1 | G 29 5`
-  (floor to x=10; 5 u water gap; floor 15–21 at y=12; step down to y=14 at 21–26;
-  ledge top y=6 from x=26)
-- Ink: `O6 R5 Y10`
-- Solution: orange `[5,12, 10,12]` → leaves the edge at 9.2 u/s, clears 5 u. Walks on,
-  drops 2 u at x=21 (vn ≈ 12.6 > 3, triggers red) onto red `[22,14, 25,14]` → bounce
-  ≥ 9 u, drifts right, lands on the ledge at 26.
-- Empty run: falls into water → fail.
-- Hint: "Fast unicorn, long jump"
+15. **Feather** — a blue dab at the edge; glide over 6 u of water. `B4 O4`.
+16. **Soft Landing** — float down 6 u onto a 3 u pedestal between spikes. `B4 O4`.
+17. **Long Jump** — orange run-up, blue at the edge: dash speed is kept and the fall is
+    soft — 17 u across. `O8 B3`.
+18. **Kite** — blue then a vine; the fling keeps the feather and glides to a ledge. `B4 G12 O4`.
 
-## Act 3 — Green
+## Act 5 — Indigo (19–22)
 
-### 7 · Vine — teaches: green is climbable in any direction
-- Geometry: `R 0 14 32 4 | R 0 0 4 14 | R 24 5 8 9 | R 28 0 4 5 | S 6 14 1 | G 26 4`
-  (floor at 14; right ledge top y=5 from x=24 with a lip wall above it at 28)
-- Ink: `G14 O4`
-- Solution: green `[22,14, 23.6,13.5, 23.6,6, 24.5,5]` — the unicorn walks into the
-  vine, climbs the wall face, exits at the top onto the ledge.
-- Empty run: paces the floor → timeout.
-- Hint: "Green: the unicorn climbs anything"
+19. **Through** — indigo painted through a full-height wall. `I8 O4`.
+20. **Basement** — an indigo ramp down through the upper floor into the room below. `I8 O4`.
+21. **Tower** — an indigo ramp up inside a 12 × 8 block to its top. `I17 O4`.
+22. **Archway** — three walls; the middle one has a 2 u arch; ink for two. `I7 O4`.
 
-### 8 · Ceiling — teaches: vines work upside down
-- Geometry: `R 0 10 6 8 | R 26 10 6 8 | K 6 12 20 6 | R 0 0 32 4 | R 15 6.5 2 5.5 | S 2 10 1 | G 29 9`
-  (spike pit 6–26; ceiling block down to y=4; a wall in the middle of the pit from
-  y=6.5 to the spikes so a floor-level bridge is blocked)
-- Ink: `G28 R4`
-- Solution: green `[5,10, 5.5,4.5, 26.5,4.5, 27,10]` — up, along the ceiling (unicorn
-  centre at y=5, bottom at 5.5, clears the wall top 6.5), down to the right platform.
-- Empty run: spikes → fail.
-- Hint: "Upside down is fine"
+## Act 6 — Violet (23–26)
 
-### 9 · Fling — teaches: a vine's end throws you (exit speed 8 u/s)
-- Geometry: `R 0 14 32 4 | R 12 0 3 9 | R 17 0 3 9 | S 2 14 1 | G 16 4.5`
-  (two pillars from the top down to y=9 forming a chimney 15–17 wide; the gem is
-  inside the chimney at y=4.5, above the top of a vine the player can afford)
-- Ink: `G10 O4`
-- Solution: green `[13,14, 15.4,13, 15.4,7]` — the unicorn climbs to y=7 and is
-  thrown straight up at 8 u/s (rise 0.8 u) → overlaps the gem at 4.5? No: 7 − 0.8 =
-  6.2 centre, gem at 4.5 needs centre ≤ 5.6. Extend the vine to `15.4,6` (10 u total)
-  → apex 5.2 ✔ overlaps. Budget 10 is exact on purpose (star impossible = fine).
-- Empty run: paces → timeout.
-- Hint: "Vines throw you off the end"
+23. **Flip** — violet to the ceiling. `V4 O4`.
+24. **Flip Flop** — up over spikes, down before the overhang. `V8 O4`.
+25. **Two Worlds** — flip up, phase through a hanging wall on the ceiling, flip down onto
+    the far platform. `V8 I6 O4`.
+26. **Balloon** — feather + flip: a slow rise drifts under a hanging wall. `B3 V4 O4`.
 
-## Act 4 — Blue
+## Act 7 — Spectrum (27–30)
 
-### 10 · Slide — teaches: ice turns height into speed
-- Geometry: `R 0 4 6 14 | W 6 16 18 2 | R 24 13 8 5 | S 2 4 1 | G 29 12`
-- Ink: `B18 O4`
-- Solution: blue `[6,4, 15,11, 18,11]` — a 45° slide that ends in a 3 u flat lip so the
-  unicorn exits horizontally at ~20 u/s from (18,11), flies ~6 u and lands on the
-  platform (top y=13). Tune the lip position in the tool.
-- Empty run: walks off at x=6 → water → fail.
-- Hint: "Ice: gravity does the walking"
+27. **Spectrum** — dabs of every colour open the gate; violet up and down past it.
+    `R4 O4 Y4 G4 B4 I4 V5`.
+28. **Pinball** — red pads hung from both walls ping-pong the unicorn up to the far
+    ledge over spikes. `R8 O4`.
+29. **Free Style** — all seven colours, tight ink, many routes; the cheapest is violet
+    up, indigo through the hanging block, violet down. `R3 O4 Y5 G6 B3 I4 V3`.
+30. **Prism** — finale in rooms: dash + feather over water, phase through a wall,
+    yellow chain over spikes, vine up a ledge, red dab, violet to the ceiling (the gate
+    opens with all seven), violet down into the gem room. `R4 O6 Y10 G10 B4 I5 V5`.
 
-### 11 · Half-pipe — teaches: ice keeps speed uphill
-- Geometry: `R 0 6 4 12 | R 28 8 4 10 | S 2 6 1 | G 30 7` (no floor)
-- Ink: `B34`
-- Solution: blue U `[4,6, 8,12, 16,14, 24,12, 28,8.5]`. Energy is conserved on ice so it
-  climbs back to nearly y=6; the ledge top is 8.
-- Empty run: out of world → fail.
-- Hint: "What goes down comes up"
+## Level 31 — Daily (generated)
 
-### 12 · Slingshot — teaches: bounce height scales with impact speed
-- Geometry: `R 0 3 5 15 | R 12 14 8 4 | R 26 1 6 17 | S 2 3 1 | G 22 2`
-  (gem 12 u above the floor — a from-rest bounce (9 u) can't reach it)
-- Ink: `B14 R4 O4`
-- Solution: blue `[5,3, 13,13.5]`, red `[13,14, 17,13.6]` (slightly tilted right).
-  Impact ~22 u/s × 1.5 = 33 ⇒ 13.6 u rise → reaches the gem.
-- Empty run: falls, lands on the floor from 11 u (no red) → paces → timeout.
-- Hint: "Faster in, higher out"
+Seed = days since 2026-01-01. Uses the constructive generator (docs/05). Also the
+online race level with the room's seed.
 
-## Act 5 — Indigo
+## Authoring tools (dev only, not shipped)
 
-### 13 · Through — teaches: indigo is one-way (solid from above only)
-- Geometry: `R 0 14 32 4 | R 0 8 6 6 | R 26 0 6 18 | S 2 8 1 | G 16 6`
-- Ink: `I8 R5`
-- Solution: red `[7,14, 10,14]`, indigo `[13,6.5, 19,6.5]`. Drop 6 u → bounce ≥ 9 u
-  (apex y≈5) passes *up through* the indigo, comes down and lands on it, walks to the
-  gem. With any solid colour the unicorn would hit it from below and fall back.
-- Empty run: paces → timeout.
-- Hint: "Indigo: solid from above only"
-
-### 14 · Up Well — teaches: put the landing where you want it
-- Geometry: `R 0 14 32 4 | R 0 0 8 18 | R 24 0 8 18 | R 8 0 16 1 | R 8 12 2 2 | S 9 12 1 | G 20 3`
-  (a well 8–24 with a ceiling at y=1; a 2 u step for the drop)
-- Ink: `I8 R4`
-- Solution: red `[12,14, 16,14]`, indigo `[17,3.5, 23,3.5]`. Unicorn drops 2 u onto red,
-  bounces ≥ 9 u, drifts right through the indigo, bumps the ceiling, falls back, lands
-  on the indigo, walks right to the gem.
-- Empty run: paces the well → timeout.
-- Hint: none
-
-### 15 · Rebound — teaches: combos
-- Geometry: `R 0 4 6 14 | R 6 14 14 4 | R 20 0 12 18 | S 2 4 1 | G 18 3`
-- Ink: `B12 R4 I6 G10`
-- Solution: blue `[6,4, 12,13.5]`, red `[12,14, 15,14]`, indigo `[13,8, 19,8]`,
-  green `[19.4,8, 19.4,3.5]` up the right wall face. Author in tool.
-- Hint: none
-
-## Act 6 — Violet
-
-### 16 · Flip — teaches: violet flips gravity
-- Geometry: `R 0 14 32 4 | R 0 0 32 3 | S 2 14 1 | G 20 4`
-- Ink: `V4 O4`
-- Solution: violet `[8,13.5, 8,12]`. Unicorn walks into it, floats up, lands on the
-  ceiling (bottom y=3), keeps walking right to the gem.
-- Empty run: paces → timeout.
-- Hint: "Violet flips gravity"
-
-### 17 · Flip Flop — teaches: flip back
-- Geometry: `R 0 14 8 4 | R 8 14 12 4 | K 8 13.5 12 .5 | R 20 14 12 4 | R 0 0 32 3 | R 24 3 8 6 | S 2 14 1 | G 29 13`
-  (spikes 8–20 on the floor; an overhang 24–32 from y=3 to 9 blocks the ceiling route)
-- Ink: `V8`
-- Solution: violet `[7,13.5, 7,12]` (up), violet `[22,3.5, 22,5]` (touched on the
-  ceiling → falls to the floor at x≈22, walks to the gem).
-- Empty run: spikes → fail.
-- Hint: none
-
-### 18 · Two Worlds — teaches: indigo under both gravities
-- Geometry: `R 0 14 6 4 | W 6 16 20 2 | R 26 14 6 4 | R 0 0 32 4 | R 18 4 2 5 | S 2 14 1 | G 29 13`
-  (water 6–26; ceiling bottom y=4; a hanging wall 18–20 blocks the ceiling route)
-- Ink: `V8 I22`
-- Solution: indigo bridge `[6,13.5, 26,13.5]`, violet `[8,13, 8,11.5]` (on the bridge),
-  violet `[16,4.5, 16,6]` (on the ceiling). The unicorn walks onto the bridge, flips up
-  at x=8 (rising away from the indigo is free), walks the ceiling to x=16, flips back,
-  lands on the same indigo from above, walks right off it onto the floor → gem.
-- Empty run: water → fail.
-- Hint: "Up, along, and back down"
-
-## Act 7 — Spectrum
-
-### 19 · Spectrum — teaches: the gate opens when all seven colours are touched
-- Geometry: `R 0 14 32 4 | R 0 0 32 3 | T 24 8 2 6 | R 24 3 2 5 | S 2 14 1 | G 29 13`
-- Ink: `R4 O4 Y4 G4 B4 I4 V5`
-- Solution: author in tool. Design guidance: dabs of ~1.5 u each; violet twice
-  (up then down, 1.5 u each fits in 5); red needs a drop — a short green vine flings
-  the unicorn 8 u/s upward, and it lands on a red dab; indigo dab as a landing shelf;
-  blue dab on the floor is touched simply by walking over it. Budgets may be raised
-  to ≥ 1.3× whatever the verified solution uses.
-- Empty run: hits the gate, paces → timeout.
-- Hint: "Touch every colour to open the gate"
-
-### 20 · Prism — finale: everything, tight ink, many routes
-- Geometry (starting point):
-  `R 0 14 32 4 | K 10 13.5 6 .5 | W 20 13 6 1 | R 0 9 8 1 | R 12 6 8 1 | R 26 3 6 1 | R 0 0 32 2 | T 24 3 2 11 | R 30 3 2 11 | S 2 14 1 | G 28 2`
-  (three tiers; spikes and water on the floor; gate 24–26 from y=3 to the floor; the
-  gem sits on the top-right tier behind the gate)
-- Ink: `R5 O5 Y10 G8 B8 I6 V4`
-- Solution: author in tool; it must exist and be verified. Adjust ink to ≥ 1.2× the
-  verified solution.
-- Hint: none.
-
-## Level 21 — Daily (generated)
-
-Seed = days since 2026-01-01. Uses the constructive generator (docs/05). Always all 7
-colours. Also the online race level with the room's seed.
-
-## Authoring tool (dev only, not shipped)
-
-`tools/play.html`: loads `src/*.js` unbundled via `<script type=module>`, adds a level
-string textarea + Load button, a Solve-check button that runs the current strokes
-headlessly and reports win/fail/time, and an Export button that prints the strokes in
-`test/solutions.js` format. Use it for every level whose paper solution fails, and
-for 15, 19, 20. Always confirm exported strokes in the Node test before committing.
+- `tools/try.mjs <level#|string> '<solution JSON>' [--trace [--every N]]` runs one
+  candidate and prints the result, ink used and (with `--trace`) the trajectory.
+- `tools/scan.mjs <level> '<solution template>' 'a=lo:hi:step' ...` sweeps parameters
+  and prints which combinations win.
+- `tools/lab.mjs` measures physics facts (slopes, glide, bounce).
+- `tools/gentrace.mjs <seed>` traces a generated level's reference solution.
+- `tools/play.html` is a browser authoring page (draw, Solve-check, Export).

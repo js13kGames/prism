@@ -31,15 +31,18 @@ const inkLeft = c => L._ink[c] - strokes.reduce((s, k) => s + (k._c == c ? k._le
 const used = () => strokes.reduce((s, k) => s + k._len, 0);
 const total = () => L._ink.reduce((s, v) => s + v, 0);
 
+// Mark which draw-phase strokes would fall on Play (rendered faded) by settling a throwaway run.
+const preview = () => createRun(L, strokes)._s.forEach((s, i) => strokes[i]._sup = s._sup);
 function hud() {
-  if (scr != 2 && scr != 3) return;
+  if ((scr != 2 && scr != 3) || !L) return;
+  if (!run) preview();
   show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, hintOn && !played ? L._hint : ''));
 }
 
-// Load level i (0..19) or the daily/online level when i == 20 (seed from `seed`).
+// Load level i or the daily/online level when i == LEVELS.length (seed from `seed`).
 function loadLevel(i, seed) {
-  li = i; daily = i == 20 ? seed : 0;
-  L = parseLevel(i == 20 ? gen(seed)[0] : LEVELS[i]);
+  li = i; daily = i == LEVELS.length ? seed : 0;
+  L = parseLevel(daily ? gen(seed)[0] : LEVELS[i]);
   strokes = []; run = null; cur = null; played = 0; PARTS.length = 0;
   col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2; hud();
 }
@@ -52,20 +55,20 @@ function rewind() { run = null; PARTS.length = 0; hud(); }
 
 // Screens
 const goTitle = () => { scr = 0; run = null; leave(); show(titleUI(snd)); };
-const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), 20)); };
+const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
 const goLobby = () => { scr = 3; run = null; show(lobbyUI('Connecting…', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
 const act = {
   go: goSelect, bk: () => scr == 2 && !daily ? goSelect() : goTitle(), on: goLobby,
-  dy: () => loadLevel(20, daySeed()),
+  dy: () => loadLevel(LEVELS.length, daySeed()),
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : show(titleUI(snd)); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
   c: v => { col = +v; hud(); sfx(0, col); },
   u: () => { if (!run && strokes.length) { strokes.pop(); hud(); if (scr == 3) send(['u']); } },
   x: () => { if (!run && strokes.length) { strokes = []; hud(); if (scr == 3) send(['c']); } },
   p: play, r: rewind,
-  nx: () => { if (li < 19) loadLevel(li + 1); else goSelect(); },
+  nx: () => { if (li < LEVELS.length - 1) loadLevel(li + 1); else goSelect(); },
   cr: () => openLobby(1), jn: () => openLobby((Q('#j') || {}).value), lv0: goLobby, cp: () => { try { navigator.clipboard.writeText(location.href.split('#')[0] + '#r=' + room); } catch (e) { } },
   st: raceStart,
 };
@@ -90,7 +93,7 @@ cv.onpointerdown = e => {
 cv.onpointermove = e => {
   if (!cur) return;
   let [x, y] = wp(e); const p = cur._p, px = p[p.length - 2], py = p[p.length - 1], d = hypot(x - px, y - py);
-  if (d < .15 || inSolid(L, (x + px) / 2, (y + py) / 2)) return;
+  if (d < .15 || (col != 5 && inSolid(L, (x + px) / 2, (y + py) / 2))) return;
   const avail = inkLeft(col) - cur._len;
   if (d >= avail) { x = px + (x - px) * avail / d; y = py + (y - py) * avail / d; }
   p.push(x, y); cur._len += min(d, avail);
@@ -104,14 +107,14 @@ function endStroke() {
   cur = null; hud();
 }
 
-// Sim events → particles/sounds. e = [kind, colour, x, y]; kinds: 0 touch 1 trigger 2 fling 3 crumble 4 fail 5 win 6 gate
+// Sim events → particles/sounds. e = [kind, colour, x, y]; kinds: 0 touch 1 trigger 2 fling 3 crumble 4 fail 5 win 6 gate 7 paint landed
 function events(r, ghost) {
   for (const e of r._ev.splice(0)) {
     const k = e[0], c = e[1];
     if (ghost) continue;
     if (k == 5) for (let i = 0; i < 7; i++) spawn(e[2], e[3], COLS[i], 6, rnd); // rainbow win burst
     else spawn(e[2], e[3], k == 4 ? '#ccc' : COLS[c], k == 4 ? 12 : k == 6 ? 20 : 5, rnd);
-    sfx(k == 1 ? (c == 0 ? 2 : c == 6 ? 5 : 0) : [0, 0, 4, 3, 6, 7, 9][k], c);
+    sfx(k == 1 ? (c == 0 ? 2 : c == 6 ? 5 : 0) : [0, 0, 4, 3, 6, 7, 9, 10][k], c);
   }
 }
 
@@ -133,7 +136,7 @@ function onWin() {
   if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
   else if (daily && scr == 2) try { localStorage.prism26_daily = daily; } catch (e) { }
   if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId(), run._t); return; }
-  show(winUI(u, t, star, li >= 19 || daily, daily ? 'Daily done!' : ''));
+  show(winUI(u, t, star, li >= LEVELS.length - 1 || daily, daily ? 'Daily done!' : ''));
 }
 
 function render(dt) {
@@ -172,7 +175,7 @@ function openLobby(code) {
   });
 }
 function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0; round++; send(['s', s, round]); startRound(s); }
-function startRound(s) { seed = s; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(20, s); }
+function startRound(s) { seed = s; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(LEVELS.length, s); }
 function onMsg([type, id, ...a]) {
   let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _run: null });
   if (type == 's') startRound(a[0]);

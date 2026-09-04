@@ -262,3 +262,60 @@ Opened `https://js13kgames.com/2026/online` with Playwright (networkidle). Findi
 |---|---|
 | Phase 7 polish + daily flag | 10,246 |
 | Final release build (`-O2`) | 10,283 |
+
+## 9 Version 2 — paint gravity, feather, phase, 30 levels (2026-09-04)
+
+Feedback after the first release: indigo's one-way platform read as "phasing that
+doesn't work", ice was indistinguishable from ordinary ground, the unicorn sprite was
+poor, 20 levels felt thin, and pressing Play did nothing to the paint even though
+"gravity" was the obvious expectation. Changes (docs/01, 02, 03, 04, 05 updated):
+
+- **Paint has weight.** A stroke is supported if it touches solid/spike/closed-gate
+  geometry (0.3 u) or a supported stroke (0.5 u, transitively). Unsupported strokes
+  fall at G, are inert while falling, and land by bisection so they rest just
+  touching. Support is recomputed when a stroke lands, a yellow crumbles or the gate
+  opens, so a bar resting on a yellow stub drops when the stub goes (level 9). In the
+  draw phase unsupported strokes render at 45 % alpha (a throwaway `createRun` after
+  every stroke change computes the flags). Water is not support. Translation-only
+  falling was chosen over rigid-body rotation: it is ~40 lines, deterministic, and the
+  "sticky paint" reading (a cantilever stays where it touches the wall) is coherent.
+- **Blue = Feather** (was Ice). Blue never brakes (the walking force only accelerates
+  up to WALK on it — a unicorn spawning at rest on blue must still start moving) and
+  arms a feather: ¼ gravity and a 5 u/s fall cap while airborne, dropped after 9
+  consecutive frames on non-blue ground (an edge corner or a scuff does not drop it)
+  or on a red bounce (otherwise a feathered bounce would leave the world). Measured:
+  ~0.8 u sideways per u of drop at walk speed, ~1.8 at dash speed.
+- **Indigo = Phase** (was one-way). Indigo is exempt from the drawing clip. On first
+  contact with an indigo stroke the sim records the solid rects that would overlap
+  the unicorn if it slid along the whole line at its current offset (samples every
+  0.3 u); those rects are ignored while touching the line, for 6 frames afterwards
+  (so the unicorn can sink onto a ramp that descends through a floor) and for as long
+  as the unicorn's centre is deep inside one of them. Alternatives tried and rejected:
+  ignoring all solids while phasing (the unicorn dipped into floors after leaving a
+  line lying on them), rects the line strictly enters (a line along the base of a wall
+  sitting on the floor never "enters" the wall), and no latch (a descending ramp can
+  never be caught because the floor re-collides every other frame). Gates, spikes and
+  water are never phased.
+- **Bounce cap.** The integrator clamps |vy| ≤ 30, so the effective maximum launch is
+  30 u/s (11.25 u rise), not BMAX = 36. This was already true in v1; documented rather
+  than changed because a 36 u/s bounce from a 10 u drop leaves the world.
+- **Vines starting on a floor.** Both sides of a vine's first point overlap the floor,
+  which used to reverse the climb immediately (the unicorn stuck at the base). On the
+  first or last segment the climb now creeps forward without moving until a side is
+  free; mid-vine blockages still reverse. A climb that cannot advance past an end
+  reverses (otherwise a downward-pointing grab stuck at t=0).
+- **Levels.** 30 hand-authored levels in seven acts (docs/03); the old 20 were kept
+  where their teaching survived the new rules (ice levels and one-way levels replaced).
+  Level select is a 30-dot rainbow grid (the arc did not fit 30 dots on a phone).
+  Level counts in main.js derive from `LEVELS.length`.
+- **Generator.** The one-way-shelf segment became wall-phase; a feather-gap segment
+  was added (self-contained run-up so a previous vine fling cannot skip the blue dab;
+  the dab extends over the edge). 40/40 seeds solvable.
+- **Unicorn sprite.** Redrawn: outlined body/neck/head/muzzle, ear, striped horn,
+  rainbow-gradient mane and tail, four legs on a trot cycle (splayed in the air), eye
+  highlight, blush, a wing while gliding, 55 % alpha while phasing. ~45 canvas calls.
+- **Sounds.** Added a paint-landing thud (sound 10). Glyphs: blue ❋, indigo ⇢.
+- **Tools.** `tools/lab.mjs` (physics measurements), `tools/gentrace.mjs`,
+  `tools/shots.mjs`, `tools/uni.html`+`uni.mjs` (sprite preview).
+
+Size after v2 (`-O1`): 11,325 bytes — 1,987 under the limit.

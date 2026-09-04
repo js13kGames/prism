@@ -49,10 +49,11 @@ export function drawWorld(g, L, run, t) {
   }
 }
 
+// Strokes: colour order 0→6. Faded when unsupported (draw phase preview or falling) or a spent violet.
 export function drawStrokes(g, strokes, cur) {
   const all = cur ? [...strokes, cur] : strokes;
   for (let c = 0; c < 7; c++) for (const s of all) if (s._c == c && !s._dead && s._p.length > 3) {
-    g.globalAlpha = s._armed == 0 ? .4 : 1;
+    g.globalAlpha = s._armed == 0 || s._sup == 0 ? .45 : 1;
     g.lineCap = g.lineJoin = 'round';
     g.setLineDash(s._touched && c == 2 ? [.3, .2] : []);
     g.beginPath(); g.moveTo(s._p[0], s._p[1]);
@@ -76,21 +77,65 @@ export function drawStart(g, x, y, d) {
   g.fillStyle = '#ffd1f0'; g.beginPath(); g.moveTo(x + d * .9, y - .5); g.lineTo(x + d * .4, y - .85); g.lineTo(x + d * .4, y - .15); g.fill();
 }
 
-// The unicorn: body ellipse, head, horn, mane, legs. u = run._u, t = seconds for leg animation.
+// Rainbow gradient along a line (mane, tail).
+function rainbow(g, x0, y0, x1, y1) {
+  const gr = g.createLinearGradient(x0, y0, x1, y1);
+  for (let i = 0; i < 7; i++) gr.addColorStop(i / 6, COLS[i]);
+  return gr;
+}
+
+// The unicorn. u = run._u (x, y, dir, g, gr, climb, vx, vy, ph, fe), t = seconds for the leg cycle.
+// Local space: origin at the circle centre, facing +x, y down; hooves at y = R.
 export function drawUnicorn(g, u, t) {
+  const air = !u._gr && !u._climb, ph = u._ph > 0;
   g.save(); g.translate(u._x, u._y);
-  if (u._climb) { const v = hypot(u._vx, u._vy) || 1; const a = Math.atan2(u._vy, u._vx); g.rotate(u._dir < 0 ? a + PI : a); }
+  if (u._climb) { const a = Math.atan2(u._vy, u._vx); g.rotate(u._dir < 0 ? a + PI : a); }
   g.scale(u._dir, u._g);
-  const walk = u._gr || u._climb ? sin(t * 14) * .12 : .1;
-  g.fillStyle = '#fbe5f3';
-  for (const dx of [-.22, .2]) { rr(g, dx - .09, .15, .2, .35 + (dx < 0 ? walk : -walk), .08); g.fill(); }
-  g.beginPath(); g.ellipse(0, 0, .55, .36, 0, 0, 7); g.fill();
-  g.beginPath(); g.arc(.5, -.3, .28, 0, 7); g.fill(); // head
-  g.fillStyle = '#ffe14d'; g.beginPath(); g.moveTo(.6, -.55); g.lineTo(.68, -1.05); g.lineTo(.78, -.5); g.fill(); // horn
-  g.lineWidth = .1; g.lineCap = 'round';
-  for (let i = 0; i < 3; i++) { g.strokeStyle = COLS[i * 2]; g.beginPath(); g.arc(.15 - i * .2, -.3, .25, PI, PI * 1.9); g.stroke(); } // mane
-  g.strokeStyle = COLS[6]; g.beginPath(); g.moveTo(-.55, -.05); g.quadraticCurveTo(-.9, -.4, -.8, .2); g.stroke(); // tail
-  g.fillStyle = '#332'; g.beginPath(); g.arc(.6, -.34, .05, 0, 7); g.fill(); // eye
+  if (ph) g.globalAlpha = .55;
+  const W_ = '#fff6fb', O = '#7a4d7d', E = .05;
+  g.lineWidth = E; g.lineCap = g.lineJoin = 'round'; g.strokeStyle = O;
+  // feather wing (blue) while gliding: scalloped wing behind the shoulder
+  if (u._fe && air) {
+    g.fillStyle = '#cfe9ff';
+    g.beginPath(); g.moveTo(.05, -.25); g.quadraticCurveTo(-.3, -1.1, -1.05, -.9);
+    g.quadraticCurveTo(-.85, -.6, -.7, -.55); g.quadraticCurveTo(-.6, -.35, -.4, -.3); g.quadraticCurveTo(-.25, -.15, .05, -.25); g.fill(); g.stroke();
+  }
+  // legs: hip x, phase. Diagonal pairs swing together; airborne legs splay.
+  const walk = u._gr || u._climb ? t * 14 : 0;
+  const legs = [[-.3, 0], [.22, PI], [-.22, PI], [.3, 0]];
+  legs.forEach(([hx, p], i) => {
+    const a = air ? (i < 2 ? -.5 : .5) : sin(walk + p) * .5;
+    g.save(); g.translate(hx, .1); g.rotate(a);
+    g.fillStyle = i < 2 ? '#e8d3ea' : W_; rr(g, -.075, 0, .15, .42, .07); g.fill(); g.stroke();
+    g.fillStyle = O; rr(g, -.085, .32, .17, .1, .04); g.fill();
+    g.restore();
+  });
+  // tail
+  g.lineWidth = .16; g.strokeStyle = rainbow(g, -.5, -.6, -.9, .3);
+  g.beginPath(); g.moveTo(-.5, -.15); g.quadraticCurveTo(-1, -.5, -.85, .25); g.stroke();
+  g.lineWidth = E; g.strokeStyle = O;
+  // body + neck + head + snout
+  g.fillStyle = W_;
+  g.beginPath(); g.ellipse(-.03, .02, .55, .34, 0, 0, 7); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(.2, -.2); g.quadraticCurveTo(.35, -.7, .6, -.75); g.lineTo(.8, -.45); g.quadraticCurveTo(.65, -.3, .45, .05); g.fill(); g.stroke();
+  g.beginPath(); g.ellipse(.62, -.62, .3, .24, .3, 0, 7); g.fill(); g.stroke();
+  g.beginPath(); g.ellipse(.88, -.52, .17, .14, .2, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = '#ffd1e8'; g.beginPath(); g.ellipse(.9, -.52, .09, .08, 0, 0, 7); g.fill(); // muzzle
+  // ear
+  g.fillStyle = W_; g.beginPath(); g.moveTo(.36, -.72); g.lineTo(.38, -1.06); g.lineTo(.58, -.82); g.fill(); g.stroke();
+  // horn: gold with stripes
+  g.fillStyle = '#ffd34d'; g.beginPath(); g.moveTo(.55, -.85); g.lineTo(.78, -1.4); g.lineTo(.74, -.78); g.fill(); g.stroke();
+  g.strokeStyle = '#d9971f'; g.beginPath(); g.moveTo(.6, -1); g.lineTo(.76, -1.05); g.moveTo(.65, -1.15); g.lineTo(.77, -1.19); g.stroke();
+  // mane: rainbow ribbon from the horn down the neck
+  g.lineWidth = .2; g.strokeStyle = rainbow(g, .5, -1, -.1, -.2);
+  g.beginPath(); g.moveTo(.5, -.95); g.quadraticCurveTo(.1, -.9, .05, -.35); g.stroke();
+  g.lineWidth = .1; g.beginPath(); g.moveTo(.3, -.85); g.quadraticCurveTo(-.05, -.55, -.15, -.3); g.stroke();
+  // eye + blush
+  g.fillStyle = '#fff'; g.beginPath(); g.ellipse(.7, -.66, .09, .1, 0, 0, 7); g.fill();
+  g.fillStyle = '#3a2440'; g.beginPath(); g.arc(.73, -.66, .06, 0, 7); g.fill();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(.75, -.69, .022, 0, 7); g.fill();
+  g.strokeStyle = O; g.lineWidth = E; g.beginPath(); g.moveTo(.63, -.78); g.quadraticCurveTo(.72, -.82, .8, -.76); g.stroke(); // brow/lash
+  g.fillStyle = '#ffa3c4'; g.globalAlpha *= .6; g.beginPath(); g.arc(.72, -.5, .06, 0, 7); g.fill();
   g.restore();
 }
 

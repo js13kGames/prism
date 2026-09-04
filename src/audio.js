@@ -17,7 +17,7 @@ function zzfx(p = 1, k = .05, b = 220, e = 0, r = 0, t = .1, q = 0, D = 1, u = 0
   p = ac.createBuffer(1, h, R); p.getChannelData(0).set(k); b = ac.createBufferSource(); b.buffer = p; b.connect(ac.destination); b.start();
 }
 
-// 0 tick(colour) 1 play 2 bounce 3 crumble 4 fling 5 flip 6 fail 7 win 8 click 9 gate
+// 0 tick(colour) 1 play 2 bounce 3 crumble 4 fling 5 flip 6 fail 7 win 8 click 9 gate 10 paint lands
 const S = [
   [.4, .05, 440, .01, .03, .06, , 1.5],
   [.5, , 520, .02, .1, .2, , 1.2, , , 200, .06],
@@ -29,6 +29,7 @@ const S = [
   [.8, , 523, .05, .25, .35, , 1, , , 262, .12],
   [.25, , 900, .01, .02, .03, , 2],
   [.7, , 400, .05, .3, .3, , , 8, , 120, .1],
+  [.5, , 110, .01, .04, .14, 4, 1.4, , , , , , 1.5],
 ];
 export function sfx(id, col) {
   if (!snd || !ac) return;

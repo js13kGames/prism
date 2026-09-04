@@ -31,9 +31,11 @@ export function gen(seed) {
       K(6, [cx - 1, cy - .5, cx - 1, cy - 1.5]); K(6, [cx + 4, cy - 5, cx + 4, cy - 4]);
       R(cx + 4.5, cy, 3, 18 - cy); cx += 7.5;
     }],
-    [9.5, 32, () => cy > 8, () => { // one-way shelf: drop, red bounce up through indigo, land on it, walk onto a higher platform
-      R(cx, cy + 2, 6.5, 16 - cy); K(0, [cx + .5, cy + 2, cx + 2.5, cy + 2]); K(5, [cx + 2, cy - 5, cx + 6.5, cy - 5]);
-      cy -= 5; R(cx + 6.5, cy, 3, 18 - cy); cx += 9.5; used |= 1;
+    [8, 32, () => 1, () => { // wall-phase: a wall from the ceiling down to the platform, indigo line through it at floor level
+      R(cx, cy, 5, 18 - cy); R(cx + 1, 0, 3, cy); K(5, [cx + .3, cy, cx + 4.7, cy]); cx += 5; R(cx, cy, 3, 18 - cy); cx += 3;
+    }],
+    [9.5, 16, () => cy < 11, () => { // feather-gap: a short run-up, blue dab over the edge, glide over 3.5 u of water to a platform 4 u lower
+      R(cx, cy, 3, 18 - cy); K(4, [cx + 1.6, cy, cx + 3.2, cy]); R(cx + 3, 16, 3.5, 2, 'W'); cy += 4; R(cx + 6.5, cy, 3, 18 - cy); cx += 9.5;
     }],
     [9, 8, () => cy > 6, () => { // spike-run: spikes in a pit, vine along the ceiling above it
       R(cx, cy + 1, 6, 17 - cy); R(cx, cy + .5, 6, .5, 'K'); R(cx - 1, cy - 5, 8, 1);

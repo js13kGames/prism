@@ -1,0 +1,11 @@
+// Dev lab: quick physics measurements against src/sim.js. node tools/lab.mjs
+import { parseLevel, createRun, step, mkStroke } from '../src/sim.js';
+const run = (lv, sol, trace) => { const L = parseLevel(lv), r = createRun(L, sol.map(([c, p]) => mkStroke(c, p))); let n = 0, land = 0, left = 0; while (!step(r) && n++ < 1600) { const u = r._u; if (!left && !u._gr) left = 1; if (left && !land && u._gr) land = u._x; if (trace && n % 15 == 0) console.log(`   t=${r._t.toFixed(2)} x=${u._x.toFixed(2)} y=${u._y.toFixed(2)} vx=${u._vx.toFixed(1)} vy=${u._vy.toFixed(1)} gr=${u._gr} surf=${u._surf} fe=${u._fe} ph=${u._ph > 0 ? 1 : 0}`); } return { st: r._state, t: r._t, x: r._u._x, y: r._u._y, land, sup: r._s.map(s => s._sup) }; };
+console.log('--- glide: walk off a ledge (top y=6) at x=6; floor at y=14 → landing x');
+for (const [name, sol] of [['plain', []], ['feather', [[4, [4, 6, 6, 6]]]], ['dash', [[1, [1, 6, 6, 6]]]], ['dash+feather', [[1, [1, 6, 4.5, 6]], [4, [4.5, 6, 6, 6]]]]]) { const r = run(`N t|S 2 6 1|G 31 1|R 0 6 6 12|R 6 14 26 4`, sol); console.log(`  ${name}: landed x≈${r.land.toFixed(1)} → travel ${(r.land - 6).toFixed(1)} u`); }
+console.log('--- glide from y=10 (drop 4)');
+for (const [name, sol] of [['plain', []], ['feather', [[4, [4, 10, 6, 10]]]], ['dash+feather', [[1, [1, 10, 4.5, 10]], [4, [4.5, 10, 6, 10]]]]]) { const r = run(`N t|S 2 10 1|G 31 1|R 0 10 6 8|R 6 14 26 4`, sol); console.log(`  ${name}: landed x≈${r.land.toFixed(1)} → travel ${(r.land - 6).toFixed(1)} u`); }
+console.log('--- phase through wall then leave the line on the floor (no dip expected)');
+{ const r = run(`N t|S 2 14 1|G 20 13|R 0 14 32 4|R 12 0 3 14`, [[5, [10, 14, 17, 14]]], 1); console.log(`  ${['play', 'WIN', 'fail'][r.st]} t=${r.t.toFixed(2)} x=${r.x.toFixed(2)}`); }
+console.log('--- bounce heights from drops (red pad on floor y=14); apex y');
+for (const h of [1, 2, 4, 6, 8]) { const L = parseLevel(`N t|S 2 ${14 - h} 1|G 31 1|R 0 ${14 - h} 4 ${4 + h}|R 4 14 28 4`), r = createRun(L, [mkStroke(0, [4, 14, 8, 14])]); let n = 0, miny = 99, t = 0; while (!step(r) && n++ < 400) { if (r._u._y < miny) miny = r._u._y; } console.log(`  drop ${h}: apex y=${miny.toFixed(1)} (rise ${(13.5 - miny).toFixed(1)} u)`); }

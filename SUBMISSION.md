@@ -1,13 +1,15 @@
-# SUBMISSION.md — PRISM (js13kGames 2026)
+# SUBMISSION.md — PRISM (js13kGames 2026), version 2
 
 ## Artefact
 
-- `dist/prism.zip` — **10,283 bytes** (limit 13,312; 3,029 bytes of headroom).
-- Built with `node build.js -O2` (roadroller thorough search; `-O1` gives 10,286).
-- `unzip -l`: exactly one entry, `index.html` (14,536 bytes). `unzip -t`: OK.
+- `dist/prism.zip` — **11,309 bytes** (limit 13,312; 2,003 bytes of headroom).
+- Built with `node build.js -O2` (roadroller thorough search).
+- `unzip -l`: exactly one entry, `index.html` (15,910 bytes). `unzip -t`: OK.
+  Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources; the only URL in the code is the PartySocket import
   (`https://play.js13kgames.com/2026/online/partysocket.js`), loaded lazily and only
-  when the player opens the Online lobby.
+  when the player opens the Online lobby. No `fetch`, no `XMLHttpRequest`, no
+  `console.`, no `localStorage.clear`; keys `prism26_progress`, `prism26_daily`.
 
 ## **Before submitting — must do by hand**
 
@@ -26,34 +28,46 @@
 2. Push the repository to GitHub (readable, unmangled source is in `src/`; the
    build is reproducible with the commands in README.md).
 
+## What changed in version 2 (DECISIONS.md §9)
+
+- **Paint has weight**: unsupported strokes fall on Play and land on whatever they
+  touch; yellow crumbling drops what rested on it; unsupported paint is drawn faded
+  while drawing.
+- **Blue is Feather** (was Ice): never brakes, and arms a slow glide.
+- **Indigo is Phase** (was one-way platform): painted through blocks; the unicorn
+  walks through the blocks the line passes through.
+- **30 levels** (was 20) in seven acts, grid level select.
+- **New unicorn sprite** (outlined cartoon, rainbow mane/tail, trot cycle, wing,
+  ghost alpha).
+- Generator segments updated (wall-phase, feather-gap); 40/40 seeds verified.
+
 ## Per-module size (minified alone; from `dist/size.txt`)
 
 ```
 module        source   min  deflate
-sim.js        10654   4742   2512
-levels.js      2502   2232   1039
-gen.js         3715   1620    881
-audio.js       2528   1341    862
-render.js      5005   3123   1320
+sim.js        14504   6116   3078
+levels.js      3905   3389   1442
+gen.js         4003   1696    921
+audio.js       2635   1378    877
+render.js      7796   4857   1745
 net.js         2450   1288    770
-ui.js          2901   2070   1043
-main.js       10684   5641   3059
-style.css      1984   1961    810
+ui.js          2771   1948    958
+main.js       11211   5783   3100
+style.css      1993   1947    795
 
-bundle raw 39576, minified 21685, roadrolled 12348, html 14536, zip 10283 (zopfli)
+bundle raw 48411, minified 26095, roadrolled 13736, html 15910, zip 11309 (zopfli)
 ```
 
 ## What was cut or changed
 
 Nothing from the priority list was cut. All six tiers shipped: core sim + 7 colours +
-20 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 10 sounds);
+30 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 11 sounds);
 online race; generator + daily; particles/animation/stars.
 
-Deviations from the spec, all logged in DECISIONS.md:
-- Level geometry for 12 levels was nudged so the paper solutions actually work in the
-  sim (the sim is the truth); teaching intent unchanged. L20's ceiling/gate gap was
-  closed so the gate cannot be bypassed.
-- Ice conserves energy while sliding instead of receiving a second gravity projection.
+Deviations from the original spec, all logged in DECISIONS.md:
+- v2 colour changes above (docs/01–05 rewritten to match).
+- Bounce launch speed is effectively capped at 30 u/s by the fall-speed clamp
+  (documented, not changed).
 - Paint contacts resolve before rect contacts (so a pad drawn on a floor line works).
 - Run state is numeric (0/1/2) instead of strings.
 - The Daily "done" flag is a ✓ on the select screen (no streaks, no scores).
@@ -61,77 +75,30 @@ Deviations from the spec, all logged in DECISIONS.md:
 ## Submission form description (≤ 500 chars)
 
 > Seven colours of rainbow paint, each with its own physics: red bounces, orange
-> dashes, yellow crumbles, green is climbable, blue is ice, indigo is one-way, violet
-> flips gravity. Paint a path, press Play, and watch a very stupid unicorn commit to
-> it. 20 hand-made levels, a daily generated level, and an online race where you see
-> rivals' paint as ghosts and the first unicorn to the gem wins. Mouse, touch or pen;
-> portrait or landscape.
+> dashes, yellow crumbles, green is climbable, blue floats you down, indigo lets you
+> walk through walls, violet flips gravity — and paint that isn't propped up falls
+> when you press Play. Paint a path and watch a very stupid unicorn commit to it.
+> 30 hand-made levels, a daily generated level, and an online race where rivals'
+> paint shows as ghosts and the first unicorn to the gem wins. Mouse, touch or pen.
 
-(435 characters.)
+(477 characters.)
 
 ## Category checklist
 
 | Category | Status |
 |---|---|
 | **Desktop** | ✔ Chrome + Firefox, keyboard shortcuts (1–7, Z, C, Space, Esc), mouse drawing, resize-safe. |
-| **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overscroll-behavior`), palette buttons 46×52 css px (≥ 44), portrait (390×844) and landscape (844×390) tested with real touch input. |
+| **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overscroll-behavior`), palette buttons 46×52 css px (≥ 44), 30-level grid fits a 390 px screen, portrait (390×844) and landscape (844×390) tested with real touch input. |
 | **Online** | ✔ Race mode over the js13kGames relay via PartySocket (lazy import, native WebSocket fallback), rooms `prism26-XXXX`, shareable `#r=CODE` links, ghost paint + ghost unicorns from the deterministic sim, degrades to a status line offline. **Needs the relay URL (above).** |
 | **Wavedash** | Publish the same `dist/index.html` build on Wavedash by 20 September (docs.wavedash.com; no new features or fixes allowed after the deadline). Nothing in the game depends on the host origin except `localStorage` keys prefixed `prism26_`. |
 
-## Test results
+## Known limitations
 
-Suite A (`node test/sim.test.js`): 20/20 levels win with their stored solutions, 20/20
-fail with empty paint, ink within budget, determinism (per-30-step hashes and batched
-stepping) identical, generator seeds 1–40 all solvable with ≥ 3 required colours and
-failing empty. Replay times: 2.45–8.87 s (L03 2.45, L05 3.42, L09 5.25, L12 2.62,
-L18 6.58, L19 6.60, L20 7.60) — all in the plausible 2–20 s band; the < 3 s wins are
-the short slide/bounce levels where the geometry is one motion long by design.
+- Firefox is tested with Playwright's Firefox build launched from a copied folder
+  (`C:\ffpw\firefox`) because the default install location fails to launch on this
+  machine (DECISIONS.md §3). A manual spot-check in the installed Firefox is
+  recommended.
+- If a relay URL is configured and the lobby is opened offline, the browser itself may
+  log a network error for the failed dynamic import (outside our code).
 
-Suite B (`node test/browser.test.js`, against the unzipped release zip), run three
-times in a row — see the table at the end of this file (filled in from
-`test-results/final-run-{1,2,3}.log`).
-
-### Manual-style checks (docs/08 C)
-
-- `unzip -l dist/prism.zip` → one entry `index.html`; `unzip -t` → no errors.
-- Nothing needs a server: no `fetch`, no `XMLHttpRequest`, no relative resources;
-  the page is self-contained (opening `dist/index.html` from disk works).
-- `http` in the minified JS: only the PartySocket import URL.
-- `localStorage.clear`: absent. Keys used: `prism26_progress`, `prism26_daily`.
-- `console.`: absent (terser `drop_console`).
-- Replay logs for levels 5, 9, 12, 18, 19, 20 read and sane (see Suite A above).
-- Firefox note: Playwright's Firefox build refuses to start from its default
-  `%LOCALAPPDATA%` location on this Windows machine (Windows SxS loader error), so the
-  suite launches a copy from `C:\ffpw`. Firefox 153 (Playwright build) therefore IS
-  tested; a manual spot-check in your installed Firefox 155 is still recommended.
-
-## Browser × test (three consecutive runs of the release zip)
-
-| browser | test | run 1 | run 2 | run 3 |
-|---|---|---|---|---|
-| chromium | boot | pass | pass | pass |
-| chromium | screens | pass | pass | pass |
-| chromium | level1-input | pass | pass | pass |
-| chromium | undo-clear-ink | pass | pass | pass |
-| chromium | all-levels | pass | pass | pass |
-| chromium | fail-path | pass | pass | pass |
-| chromium | mobile-portrait | pass | pass | pass |
-| chromium | mobile-landscape | pass | pass | pass |
-| chromium | offline-lobby | pass | pass | pass |
-| chromium | online-race | pass | pass | pass |
-| chromium | resize | pass | pass | pass |
-| chromium | audio-gesture | pass | pass | pass |
-| firefox | boot | pass | pass | pass |
-| firefox | screens | pass | pass | pass |
-| firefox | level1-input | pass | pass | pass |
-| firefox | undo-clear-ink | pass | pass | pass |
-| firefox | all-levels | pass | pass | pass |
-| firefox | fail-path | pass | pass | pass |
-| firefox | mobile-portrait | pass | pass | pass |
-| firefox | mobile-landscape | pass | pass | pass |
-| firefox | offline-lobby | pass | pass | pass |
-| firefox | online-race | pass | pass | pass |
-| firefox | resize | pass | pass | pass |
-| firefox | audio-gesture | pass | pass | pass |
-
-Run totals: 24/24, 24/24, 24/24 (exit codes 0, 0, 0).
+## Test results (suite A: 30/30 levels solved, 30/30 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)

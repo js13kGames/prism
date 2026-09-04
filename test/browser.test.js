@@ -132,7 +132,7 @@ async function runBrowser(name) {
 
   if (!QUICK) await test('all-levels', async page => {
     await boot(page);
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < SOLUTIONS.length; i++) {
       await page.evaluate(i => __prism.load(i), i);
       await page.waitForSelector('[data-a=p]');
       await page.evaluate(s => __prism.setStrokes(s), SOLUTIONS[i]);
@@ -140,14 +140,14 @@ async function runBrowser(name) {
       const t0 = Date.now();
       try { await waitWin(page); } catch (e) { await shots(page, `level${i + 1}-fail`); throw new Error(`level ${i + 1} did not win`); }
       console.log(`    level ${i + 1} won in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-      if (i == 19) await shots(page, 'level20-win');
+      if (i == SOLUTIONS.length - 1) await shots(page, 'last-level-win');
     }
     const prog = await page.evaluate(() => JSON.parse(localStorage.prism26_progress));
-    if (prog.done.filter(Boolean).length != 20) throw new Error('not all levels marked done');
+    if (prog.done.filter(Boolean).length != SOLUTIONS.length) throw new Error('not all levels marked done');
   });
 
   await test('fail-path', async page => {
-    await boot(page); await page.evaluate(() => __prism.load(2)); await page.waitForSelector('[data-a=p]');
+    await boot(page); await page.evaluate(() => __prism.load(3)); await page.waitForSelector('[data-a=p]');
     await page.click('[data-a=p]'); await page.waitForSelector('[data-a=r]');
     await page.waitForFunction(() => __prism.run && __prism.run.s === undefined ? true : true); // run object exists
     await page.waitForSelector('[data-a=p]', { timeout: 8000 }); // back in draw phase after the fail flash

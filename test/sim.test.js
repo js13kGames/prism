@@ -11,7 +11,7 @@ const only = args.filter(a => /^\d+$/.test(a)).map(Number);
 let fails = 0, warns = 0;
 const ok = (cond, msg) => { if (!cond) { fails++; console.log('  FAIL ' + msg); } };
 const warn = msg => { warns++; console.log('  warn ' + msg); };
-const FEATURED = { 1: 1, 2: 0, 4: 2, 7: 3, 10: 4, 13: 5, 16: 6 };
+const FEATURED = { 1: 1, 3: 0, 7: 2, 11: 3, 15: 4, 19: 5, 23: 6 };
 const NAMES = 'red orange yellow green blue indigo violet'.split(' ');
 const strokes = sol => sol.map(([c, p]) => mkStroke(c, p));
 
@@ -29,9 +29,9 @@ export function play(L, sol, trace) {
   return run;
 }
 
-// Player-drawn strokes cannot pass through solids; sample each segment every 0.15 u.
+// Player-drawn strokes cannot pass through solids (indigo excepted); sample each segment every 0.15 u.
 function drawable(L, sol) {
-  for (const [, p] of sol) for (let i = 2; i < p.length; i += 2) {
+  for (const [c, p] of sol) if (c != 5) for (let i = 2; i < p.length; i += 2) {
     const n = Math.ceil(strokeLen(p.slice(i - 2, i + 2)) / .15) || 1;
     for (let k = 0; k <= n; k++) if (inSolid(L, p[i - 2] + (p[i] - p[i - 2]) * k / n, p[i - 1] + (p[i + 1] - p[i - 1]) * k / n)) return 0;
   }
@@ -78,7 +78,7 @@ for (let i = 0; i < LEVELS.length; i++) {
 if (!only.length) {
   console.log(`stars achievable on ${starCount.yes} levels, not on ${starCount.no}`);
   ok(starCount.yes > 0, 'no level can earn a star');
-  if (starCount.yes < 12) warn('fewer than 12 levels can earn a star');
+  if (starCount.yes < LEVELS.length * .6) warn('fewer than 60% of levels can earn a star');
   if (starCount.no < 3) warn('fewer than 3 levels deny a star');
 }
 

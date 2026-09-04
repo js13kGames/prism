@@ -22,12 +22,15 @@ Paint a path, press Play, and watch a very stupid unicorn walk it. Get it to the
 3. **FAIL** returns automatically to Draw after 0.8 s, paint intact.
 4. **WIN** shows the win overlay: ink used vs budget, star if ≤ 60% of total budget
    used, "Next" button. Progress saved to `localStorage.prism26_progress`.
+5. **Paint landing.** Unsupported strokes drop as soon as Play starts (see docs/02).
 
 ## The unicorn (see docs/04 for exact physics)
 
-- A circle of radius 0.5 world units. Drawn as a chunky pastel unicorn: body ellipse,
-  head circle, triangle horn, two-frame leg animation, a tiny rainbow mane. Facing
-  flips with direction.
+- A circle of radius 0.5 world units. Drawn as an outlined cartoon unicorn: body,
+  arched neck, head with muzzle and ear, striped golden horn, rainbow-gradient mane
+  and tail, four legs in a trot cycle (splayed in the air), eye with highlight and a
+  blush. Facing flips with direction; a wing appears while gliding; 55 % alpha while
+  phasing.
 - It walks forward at 4 u/s. It turns around when it hits a wall. It falls off edges.
   That's the whole AI. Comedy comes from watching it commit to bad decisions.
 - The start marker shows the facing direction (arrow) so the player can plan.
@@ -51,19 +54,23 @@ Paint a path, press Play, and watch a very stupid unicorn walk it. Get it to the
 | Orange | Dash | Walk speed ×2.3 while on it; momentum carries after leaving |
 | Yellow | Brittle | Lots of ink, but each stroke crumbles 0.6 s after first touch |
 | Green | Vine | Unicorn sticks to it and walks along it in any orientation |
-| Blue | Ice | No walking force; the unicorn slides under gravity only |
-| Indigo | Phase | One-way: solid from above, passable from below |
+| Blue | Feather | Never brakes; after touching it the unicorn falls slowly (glides) |
+| Indigo | Phase | Can be painted through blocks; the unicorn walks through them on it |
 | Violet | Flip | Touching it flips gravity for the unicorn |
 
-Unlock order across the 20 levels: Orange+Red (1), Yellow (4), Green (7), Blue (10),
-Indigo (13), Violet (16), Gate mechanic (19).
+**Paint has weight.** When Play starts, any stroke that does not touch the world (or
+a supported stroke) falls until it lands. Yellow crumbling drops whatever rested on
+it. Unsupported strokes are drawn faded in the draw phase.
+
+Unlock order across the 30 levels: Orange+Red (1), Yellow (7), Green (11), Blue (15),
+Indigo (19), Violet (23), Gate mechanic (27).
 
 ## Screens
 
 1. **Title** — "PRISM", a unicorn idling on a rainbow arc, tap to start, small
    "Online" and "Daily" buttons. Sound toggle icon.
-2. **Level select** — 20 dots in a rainbow arc. Locked dots grey. Completed dots
-   coloured, starred ones with a small star. Daily seed level appended as a 21st dot.
+2. **Level select** — 30 rainbow-coloured dots in a grid. Locked dots grey. Completed
+   dots coloured, starred ones with a small star. A Daily button below the grid.
 3. **Game** — canvas + HUD. HUD top: level name, hint text (short, disappears after
    first Play). HUD bottom (draw phase): palette buttons with ink bars, Undo, Clear,
    Play. HUD bottom (play phase): Rewind. HUD top-left: back button.
@@ -88,7 +95,7 @@ Keep UI text tiny; the ink bars and colour swatches do the talking.
 - Pointer Events API only (covers mouse, touch, pen). `touch-action: none` on the
   canvas. `user-select: none`. Viewport meta with `user-scalable=no`.
 - Keyboard: 1–7 select colour, Z undo, C clear, Space play/rewind, Esc back.
-- Colour blindness: each palette button shows the colour's icon glyph (↑ ⇒ ✶ ⋮ ~ ⇑ ⟳)
+- Colour blindness: each palette button shows the colour's icon glyph (↑ ⇒ ✶ ⋮ ❋ ⇢ ⟳)
   in addition to the colour, and the level hint names colours by name.
 
 ## Hint system
