@@ -255,6 +255,13 @@ async function runBrowser(name) {
         const tag = await p.$eval('.h span', s => s.textContent);
         if (!/Round 1 · 0–0/.test(tag)) throw new Error('the rematch did not reset the score: ' + tag);
       }
+
+      // Leaving the room leaves the rivals behind: their paint must not follow you into a solo level.
+      await host.click('[data-a=bk]'); await host.waitForSelector('[data-a=go]', { timeout: 3000 });
+      await openLevel(host, 0);
+      const stowaways = await host.evaluate(() => __prism.gs());
+      if (stowaways.length) throw new Error('rivals followed the player out of the room: ' + JSON.stringify(stowaways));
+      await shots(host, 'after-race-solo');
     } finally { try { spy && spy.close(); } catch (e) { } relay.close(); }
   }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 

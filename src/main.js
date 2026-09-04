@@ -55,7 +55,7 @@ function play() {
 function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
-const goTitle = () => { scr = 0; run = null; leave(); show(titleUI(snd)); };
+const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); show(titleUI(snd)); };
 const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
 const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
 
@@ -129,7 +129,7 @@ function frame(ts) {
     for (let n = 0; acc >= DT && n < 4; n++) { step(run); acc -= DT; events(run); }
     if (run._state == 1) onWin(); else if (run._state == 2) failT = T + .8;
   } else if (run && run._state == 2 && T > failT) rewind();
-  for (const gh of ghosts) if (gh._run && !gh._run._state) for (let n = 0; n < 1; n++) { step(gh._run); events(gh._run, 1); }
+  if (scr == 3) for (const gh of ghosts) if (gh._run && !gh._run._state) { step(gh._run); events(gh._run, 1); }
   render(dt);
   requestAnimationFrame(frame);
 }
@@ -148,7 +148,7 @@ function render(dt) {
   g.setTransform(sc * dpr, 0, 0, sc * dpr, ox * dpr, oy * dpr);
   if (scr >= 2 && L) {
     drawWorld(g, L, run, T);
-    for (const gh of ghosts) if (gh._run) { g.globalAlpha = .35; drawStrokes(g, gh._run._s); if (!gh._run._state) drawUnicorn(g, gh._run._u, T); g.globalAlpha = 1; }
+    if (scr == 3) for (const gh of ghosts) if (gh._run) { g.globalAlpha = .35; drawStrokes(g, gh._run._s); if (!gh._run._state) drawUnicorn(g, gh._run._u, T); g.globalAlpha = 1; }
     drawStrokes(g, run ? run._s : strokes, cur);
     drawStart(g, L._sx, L._sy, L._sd); drawGem(g, L._gx, L._gy, T);
     if (run) { if (run._state != 2) drawUnicorn(g, run._u, T); }

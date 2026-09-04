@@ -417,4 +417,12 @@ Size after these fixes (`-O1`): 11,903 bytes — 1,409 under the limit.
   they had left. It closes the connection and clears the room state; the result card's
   Leave goes all the way back to the title (which already disconnected).
 
-Size after the race rework (`-O2`): 12,138 bytes — 1,174 under the limit.
+- **Ghosts outlived the race.** `ghosts` was never cleared on the way out and neither the
+  frame loop nor the renderer checked which screen was up, so the winner's replay kept
+  being stepped and drawn over every level opened afterwards — paint hanging in the sky
+  of level 1, built from a generated level's geometry. Ghosts are now scoped to the race
+  screen (`scr == 3`) in both places, and `goTitle` drops the room's players. Visual only:
+  a player's own run is built from their own `strokes`, so nothing about the physics was
+  ever affected. `online-race` now leaves the room and opens level 1 to prove it.
+
+Size after the race rework (`-O2`): 12,134 bytes — 1,178 under the limit.

@@ -2,9 +2,9 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **12,138 bytes** (limit 13,312; 1,174 bytes of headroom).
+- `dist/prism.zip` — **12,134 bytes** (limit 13,312; 1,178 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (17,035 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (17,029 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -45,7 +45,8 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 - **Rounds and matches announce themselves**: round card, HUD round/score tag, a result
   card naming winner, time and score, and Next round / Rematch / Leave.
 - **Leave leaves.** The lobby button used to keep the socket open, so the next round
-  dragged the player back in.
+  dragged the player back in, and a rival's paint used to stay on screen in every level
+  opened afterwards.
 - **Wavedash-ready**: `wavedash.toml`, `dist/wavedash/index.html`, and a guarded
   `Wavedash.init()` that costs nothing when the platform global is absent.
 
@@ -75,10 +76,10 @@ audio.js       4649   2223   1295
 render.js      7645   4857   1745
 net.js         2343   1174    714
 ui.js          3632   2368   1111
-main.js       13873   6727   3613
+main.js       13886   6728   3605
 style.css      2025   2001    817
 
-bundle raw 53237, minified 28210, roadrolled 14807, html 17035, zip 12138 (zopfli)
+bundle raw 53250, minified 28213, roadrolled 14801, html 17029, zip 12134 (zopfli)
 ```
 
 ## What was cut or changed
@@ -126,48 +127,48 @@ Deviations from the original spec, all logged in DECISIONS.md:
 
 ## Test results (suite A: 30/30 levels solved, 30/30 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (12,138 bytes), two consecutive full runs after the final build.
-Run 2 uses the fuller `online-race` test (it adds the match-decider and rematch assertions); the build under
-test is identical in both runs. The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
+Suite B against the unzipped release zip (12,134 bytes), one full run after the final build (the
+two runs before it, on the build without the ghost-lifetime fix, were also 28/28 in both browsers). The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
 
-| browser | test | run 1 | run 2 |
-|---|---|---|---|
-| chromium | boot | pass | pass |
-| chromium | screens | pass | pass |
-| chromium | level1-input | pass | pass |
-| chromium | undo-clear-ink | pass | pass |
-| chromium | all-levels | pass | pass |
-| chromium | fail-path | pass | pass |
-| chromium | mobile-portrait | pass | pass |
-| chromium | mobile-landscape | pass | pass |
-| chromium | offline-lobby | pass | pass |
-| chromium | online-race | pass | pass |
-| chromium | resize | pass | pass |
-| chromium | audio-gesture | pass | pass |
-| chromium | mute-glyph | pass | pass |
-| chromium | room-link | pass | pass |
-| firefox | boot | pass | pass |
-| firefox | screens | pass | pass |
-| firefox | level1-input | pass | pass |
-| firefox | undo-clear-ink | pass | pass |
-| firefox | all-levels | pass | pass |
-| firefox | fail-path | pass | pass |
-| firefox | mobile-portrait | pass | pass |
-| firefox | mobile-landscape | pass | pass |
-| firefox | offline-lobby | pass | pass |
-| firefox | online-race | pass | pass |
-| firefox | resize | pass | pass |
-| firefox | audio-gesture | pass | pass |
-| firefox | mute-glyph | pass | pass |
-| firefox | room-link | pass | pass |
+| browser | test | result |
+|---|---|---|
+| chromium | boot | pass |
+| chromium | screens | pass |
+| chromium | level1-input | pass |
+| chromium | undo-clear-ink | pass |
+| chromium | all-levels | pass |
+| chromium | fail-path | pass |
+| chromium | mobile-portrait | pass |
+| chromium | mobile-landscape | pass |
+| chromium | offline-lobby | pass |
+| chromium | online-race | pass |
+| chromium | resize | pass |
+| chromium | audio-gesture | pass |
+| chromium | mute-glyph | pass |
+| chromium | room-link | pass |
+| firefox | boot | pass |
+| firefox | screens | pass |
+| firefox | level1-input | pass |
+| firefox | undo-clear-ink | pass |
+| firefox | all-levels | pass |
+| firefox | fail-path | pass |
+| firefox | mobile-portrait | pass |
+| firefox | mobile-landscape | pass |
+| firefox | offline-lobby | pass |
+| firefox | online-race | pass |
+| firefox | resize | pass |
+| firefox | audio-gesture | pass |
+| firefox | mute-glyph | pass |
+| firefox | room-link | pass |
 
-Totals: 28/28, 28/28. No console errors or warnings in either run.
+Totals: 28/28. No console errors or warnings.
 
 What `online-race` now proves, per browser: two pages get the same generated level and a `Round 1` card; the
 host sees `rival racing` when the guest presses Play but receives **no** stroke and **no** ghost run; a third
 client's win produces the result card, the score and a running replay of that winner's paint on both pages;
 the guest is told to wait while only the host gets **Next round**; a second win ends the match with
-**Rematch**, and the rematch resets the score to `Round 1 · 0–0`.
+**Rematch**, the rematch resets the score to `Round 1 · 0–0`, and leaving the room for level 1 leaves no
+rival paint behind.
 
 `room-link` proves: **Copy link** puts `<url>#r=CODE` on the clipboard (read back from the clipboard in
 chromium; the status line in firefox), a page opened on that link joins the room, and **Leave** disconnects —
