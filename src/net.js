@@ -1,28 +1,24 @@
-// Online race transport (docs/06). PartySocket is imported lazily from the js13kGames server only when the
-// player opens a room; any failure degrades to a status callback. NET.url is the relay URL from the game's
-// registration page with the literal `{room}` where the room name goes — see SUBMISSION.md.
-export const NET = { imp: 'https://play.js13kgames.com/2026/online/partysocket.js', url: 'TODO' }; // (unmangled: tests override url)
+// Online race transport (docs/06): a plain WebSocket to the game's relay. NET.url is the relay URL from the
+// js13kGames registration page; the relay treats each sub-path as an isolated room, so `{room}` becomes
+// `prism26-CODE`. Any failure degrades to a status callback; an unexpected close retries a few times.
+export const NET = { url: 'wss://relay.js13kgames.com/prism/{room}' }; // (unmangled: tests override url)
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-let ws, cb, id, peers = new Set();
+let ws, cb, id, tries = 0, peers = new Set();
 
 // join(code, cb): code = 4 letters, or 1 to create a fresh room. cb(kind, data):
 //   'err' message | 'open' {room,id,n} | 'n' [peer ids] | 'msg' [type, senderId, ...payload] | 'close'
-export async function join(code, onEvent) {
+export function join(code, onEvent) {
   leave(); cb = onEvent;
   if (code === 1) code = [...Array(4)].map(() => ALPHA[Math.random() * 24 | 0]).join('');
   code = (code || '').toUpperCase();
   if (!/^[A-Z]{4}$/.test(code)) return cb('err', 'Enter a 4-letter room code');
   if (NET.url == 'TODO') return cb('err', 'Online is not configured (offline build)');
+  if (navigator.onLine === false) return cb('err', 'You are offline');
   id = Math.random().toString(36).slice(2, 6);
-  const url = NET.url.replace('{room}', 'prism26-' + code);
-  try {
-    let P; try { P = (await import(NET.imp)).PartySocket; } catch (e) { }
-    const u = new URL(url);
-    ws = P ? new P({ host: u.host, basePath: u.pathname.slice(1), protocol: u.protocol.slice(0, -1) }) : new WebSocket(url);
-  } catch (e) { return cb('err', 'Could not connect — are you offline?'); }
-  ws.onopen = () => { peers.clear(); send(['h']); cb('open', { room: code, id, n: 1 }); };
+  try { ws = new WebSocket(NET.url.replace('{room}', 'prism26-' + code)); } catch (e) { return cb('err', 'Could not connect'); }
+  ws.onopen = () => { tries = 0; peers.clear(); send(['h']); cb('open', { room: code, id, n: 1 }); };
   ws.onerror = () => cb('err', 'Connection failed — are you offline?');
-  ws.onclose = () => cb('close');
+  ws.onclose = () => { cb('close'); if (tries++ < 3) setTimeout(() => ws || join(code, cb), 1500); };
   ws.onmessage = e => {
     const d = e.data;
     if (typeof d != 'string') return;
@@ -35,5 +31,5 @@ export async function join(code, onEvent) {
   };
 }
 export function send(m) { if (ws && ws.readyState == 1) ws.send(JSON.stringify([m[0], id, ...m.slice(1)])); }
-export function leave() { if (ws) { ws.onclose = ws.onerror = null; ws.close(); ws = null; } peers.clear(); }
+export function leave() { if (ws) { ws.onclose = ws.onerror = null; ws.close(); } ws = null; peers.clear(); }
 export const myId = () => id;

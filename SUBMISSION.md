@@ -11,22 +11,22 @@
   when the player opens the Online lobby. No `fetch`, no `XMLHttpRequest`, no
   `console.`, no `localStorage.clear`; keys `prism26_progress`, `prism26_daily`.
 
-## **Before submitting — must do by hand**
+## Online relay
 
-1. **Relay URL.** Register the game as a draft on js13kgames.com (Online category)
-   to get your relay URL, then set `url` in `src/net.js`:
-   ```js
-   export const NET = { imp: 'https://play.js13kgames.com/2026/online/partysocket.js', url: 'wss://…your relay…/{room}' };
-   ```
-   Keep the literal `{room}` where the room name belongs — the game replaces it with
-   `prism26-XXXX`. If your relay URL has no room slot, put `{room}` wherever the
-   relay expects the room (path segment or query value). Rebuild with
-   `node build.js -O2`, re-run `node test/browser.test.js`, commit.
-   Until this is done the lobby shows "Online is not configured (offline build)" and
-   everything else works offline. The relay page could not be read without logging
-   in (see DECISIONS.md 0.2), so this URL was not guessed.
-2. Push the repository to GitHub (readable, unmangled source is in `src/`; the
-   build is reproducible with the commands in README.md).
+`src/net.js` connects to `wss://relay.js13kgames.com/prism/{room}` with `{room}` =
+`prism26-CODE`. Probed with `tools/relayprobe.mjs`: the relay accepts any sub-path as
+an isolated room (a message sent in `/prism/prism26-AAAA` reached only the other
+client in that room, not `/prism/prism26-BBBB` nor the base `/prism`), sends `@id` on
+connect and `+id` when another client joins. `tools/relaytest.mjs` drives two real
+browser pages through the live relay (create, join, same level, ghost stroke, ghost
+unicorn). Races are best of three rounds, each on a fresh generated level.
+
+## Before submitting
+
+1. Upload `dist/prism.zip` as the draft's game file, open the preview in two tabs and
+   race once (Online → Create room / Join).
+2. The repository is at https://github.com/Arjun0014/PRISM (readable source in
+   `src/`; the build is reproducible with the commands in README.md).
 
 ## What changed in version 2 (DECISIONS.md §9)
 
@@ -89,7 +89,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 |---|---|
 | **Desktop** | ✔ Chrome + Firefox, keyboard shortcuts (1–7, Z, C, Space, Esc), mouse drawing, resize-safe. |
 | **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overscroll-behavior`), palette buttons 46×52 css px (≥ 44), 30-level grid fits a 390 px screen, portrait (390×844) and landscape (844×390) tested with real touch input. |
-| **Online** | ✔ Race mode over the js13kGames relay via PartySocket (lazy import, native WebSocket fallback), rooms `prism26-XXXX`, shareable `#r=CODE` links, ghost paint + ghost unicorns from the deterministic sim, degrades to a status line offline. **Needs the relay URL (above).** |
+| **Online** | ✔ Best-of-three race over the js13kGames relay (`wss://relay.js13kgames.com/prism/{room}`) via PartySocket (lazy import, native WebSocket fallback), rooms `prism26-XXXX`, shareable `#r=CODE` links, ghost paint + ghost unicorns from the deterministic sim, degrades to a status line offline. Verified against the live relay with two real browser pages. |
 | **Wavedash** | Publish the same `dist/index.html` build on Wavedash by 20 September (docs.wavedash.com; no new features or fixes allowed after the deadline). Nothing in the game depends on the host origin except `localStorage` keys prefixed `prism26_`. |
 
 ## Known limitations
@@ -98,8 +98,8 @@ Deviations from the original spec, all logged in DECISIONS.md:
   (`C:\ffpw\firefox`) because the default install location fails to launch on this
   machine (DECISIONS.md §3). A manual spot-check in the installed Firefox is
   recommended.
-- If a relay URL is configured and the lobby is opened offline, the browser itself may
-  log a network error for the failed dynamic import (outside our code).
+- If the lobby is opened offline, the browser itself may log a network error for the
+  failed PartySocket import (outside our code); the lobby shows a status line.
 
 ## Test results (suite A: 30/30 levels solved, 30/30 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 

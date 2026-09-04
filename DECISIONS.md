@@ -319,3 +319,20 @@ poor, 20 levels felt thin, and pressing Play did nothing to the paint even thoug
   `tools/shots.mjs`, `tools/uni.html`+`uni.mjs` (sprite preview).
 
 Size after v2 (`-O1`): 11,325 bytes — 1,987 under the limit.
+
+## 10 Relay URL and best-of-three (2026-09-04)
+
+- The registration page gives `wss://relay.js13kgames.com/prism` ("point a WebSocket
+  at your game's room"). `tools/relayprobe.mjs` (plain Node WebSocket) showed that
+  sub-paths are separate rooms: a message in `/prism/prism26-AAAA` reached only the
+  other client in that room, not `/prism/prism26-BBBB` and not the base path; the
+  relay sends `@<id>` on connect and `+<id>` on a join, as the online page described.
+  A `?room=` query also connects but was not needed. `NET.url` is therefore
+  `wss://relay.js13kgames.com/prism/{room}`.
+- `tools/relaytest.mjs` runs two real Playwright pages against the live relay
+  (create/join, same level name, ghost stroke and ghost unicorn arrive) — the browser
+  suite's `online-race` test keeps using the in-process stub so it stays hermetic.
+- Races are now a proper best of three: the round number travels with the seed
+  message, first to two round wins (or three rounds) ends the match with a line in
+  the lobby, scores reset for a rematch. The lobby's initial status no longer says
+  "Connecting…" before a room exists.

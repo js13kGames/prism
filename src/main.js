@@ -174,21 +174,25 @@ function openLobby(code) {
     else if (st == 'close') lobby('Reconnecting…');
   });
 }
-function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0; round++; send(['s', s, round]); startRound(s); }
-function startRound(s) { seed = s; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(LEVELS.length, s); }
+function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0; round++; send(['s', s, round]); startRound(s, round); }
+function startRound(s, r) { seed = s; round = r; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(LEVELS.length, s); }
 function onMsg([type, id, ...a]) {
   let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _run: null });
-  if (type == 's') startRound(a[0]);
+  if (type == 's') startRound(a[0], a[1]);
   else if (type == 'k') gh._s.push(mkStroke(a[0], a[1]));
   else if (type == 'u') gh._s.pop(); else if (type == 'c') gh._s = [];
   else if (type == 'p' && L) gh._run = createRun(L, gh._s);
   else if (type == 'f') gh._run = null;
   else if (type == 'w') raceWin(id, a[0]);
 }
+// Best of three: first to two round wins (or three rounds) takes the match; scores then reset for a rematch.
 function raceWin(id, t) {
   if (raceOver) return;
   score[id] = (score[id] || 0) + 1;
-  raceOver = (id == myId() ? 'You win' : 'Ghost ' + id + ' wins') + ' in ' + t.toFixed(2) + 's · you ' + (score[myId()] || 0) + ' – ' + (ghosts.reduce((s, g) => s + (score[g._id] || 0), 0)) + ' them';
+  const me = score[myId()] || 0, them = ghosts.reduce((s, g) => s + (score[g._id] || 0), 0), done = me > 1 || them > 1 || round > 2;
+  raceOver = (id == myId() ? 'You win' : 'Ghost ' + id + ' wins') + ' round ' + round + ' in ' + t.toFixed(2) + 's · you ' + me + ' – ' + them + ' them' +
+    (done ? me > them ? ' · You take the match!' : me < them ? ' · They take the match.' : ' · Match drawn.' : '');
+  if (done) { round = 0; score = {}; }
   run = null; lobby(raceOver);
 }
 

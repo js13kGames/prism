@@ -39,9 +39,14 @@ Two players (accept up to 4; everyone races) get the same generated level (docs/
 — or, if the generator was cut, level `1 + seed % 20`. Everyone draws at the same
 time and sees the others' strokes as translucent ghosts. Each player presses Play
 independently as often as they like. First unicorn to reach the gem wins the round.
-Then a new seed, best of 3.
+The host starts the next round with a new seed; first to two round wins (or three
+rounds) takes the match, then scores reset for a rematch.
 
 ## Rooms
+
+- Relay URL (from the registration page): `wss://relay.js13kgames.com/prism`. Any
+  sub-path is an isolated room (verified with `tools/relayprobe.mjs`), so the game
+  connects to `wss://relay.js13kgames.com/prism/prism26-CODE`.
 
 - Room code: 4 uppercase letters from `ABCDEFGHJKLMNPQRSTUVWXYZ` (no I/O).
   Room name sent to the relay = `prism26-` + code (namespaced).

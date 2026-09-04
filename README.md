@@ -25,9 +25,10 @@ edges. All the agency is in the paint.
 5. A **★** is earned when you use at most 60 % of the level's total ink.
 
 30 hand-made levels teach the colours one at a time. **Daily** is a new generated level
-every day (same for everyone). **Online** is a race: everyone in a room gets the same
-generated level, draws at the same time, sees the others' paint as ghosts, and the first
-unicorn to reach the gem wins the round.
+every day (same for everyone). **Online** is a best-of-three race: everyone in a room gets
+the same generated level, draws at the same time, sees the others' paint as ghosts, and
+the first unicorn to reach the gem wins the round; the host starts each new round on a
+fresh level.
 
 ### Controls
 
@@ -71,7 +72,8 @@ container around a zopfli deflate stream, verifies it with `unzip`, prints a per
 size table (`dist/size.txt`), and exits non-zero if the zip exceeds 13,312 bytes.
 
 The shipped page has no external resources. The only network access is the optional
-Online mode, which lazily imports PartySocket from the js13kGames server.
+Online mode, which lazily imports PartySocket from the js13kGames server and connects to
+the game's relay (`wss://relay.js13kgames.com/prism/<room>`).
 
 ## Tests
 

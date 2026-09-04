@@ -174,8 +174,8 @@ async function runBrowser(name) {
     await page.click('[data-a=p]'); await waitWin(page);
   }, { viewport: { width: 844, height: 390 }, ...mobile });
 
-  await test('offline-lobby', async page => {
-    await boot(page);
+  await test('offline-lobby', async (page, ctx) => {
+    await boot(page); await ctx.setOffline(true);
     await page.click('[data-a=on]'); await page.waitForSelector('[data-a=bk]');
     if (await page.$('[data-a=cr]')) await page.click('[data-a=cr]');
     await page.waitForFunction(() => /offline|unavailable|not available|failed|error|blocked|TODO|relay/i.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
@@ -183,7 +183,7 @@ async function runBrowser(name) {
     await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=go]');
   }, {}, route => { const u = route.request().url(); return u.startsWith(URL) ? route.continue() : route.abort(); });
 
-  // Two pages race through an in-process relay; PartySocket is served as a stub so the test is hermetic.
+  // Two pages race through an in-process relay (test/relay.js) so the test is hermetic; tools/relaytest.mjs hits the real one.
   await test('online-race', async (page, ctx) => {
     const relay = await startRelay();
     const page2 = await ctx.newPage();
@@ -209,11 +209,7 @@ async function runBrowser(name) {
       await host.waitForFunction(() => __prism.gs()[0][1], null, { timeout: 5000 });
       await sleep(300); await shots(host, 'race-ghost');
     } finally { relay.close(); }
-  }, {}, route => {
-    const u = route.request().url();
-    if (/partysocket.js$/.test(u)) return route.fulfill({ contentType: 'text/javascript', body: 'export class PartySocket extends WebSocket{constructor(o){super(o.protocol+"://"+o.host+"/"+o.basePath)}}' });
-    return u.startsWith(URL) ? route.continue() : route.abort();
-  });
+  }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   await test('resize', async page => {
     await boot(page); await openLevel(page, 0);
