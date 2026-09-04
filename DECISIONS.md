@@ -378,8 +378,9 @@ Size after v2 (`-O1`): 11,325 bytes — 1,987 under the limit.
   (docs.wavedash.com/sdk/setup), so integration adds no external resource and the zip
   stays rule-legal: a guarded three-line block calls `init()` and `readyForEvents()`
   when the global exists and does nothing anywhere else. `wavedash.toml` is checked
-  in (what `wavedash init` scaffolds; `game_id` is a placeholder until the Developer
-  Portal issues one) and `build.js` writes `dist/wavedash/index.html` so `upload_dir`
+  in (what `wavedash init` scaffolds; `game_id` is the PRISM game on the account, read from
+  `wavedash project list` — the API key itself stays out of the repo and is passed as
+  `WAVEDASH_TOKEN`) and `build.js` writes `dist/wavedash/index.html` so `upload_dir`
   contains exactly the one file that ships in the zip. Leaderboards/achievements were
   left out: they need portal-side IDs that do not exist yet, and the bytes are better
   kept as headroom.

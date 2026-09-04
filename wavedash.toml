@@ -1,11 +1,13 @@
 # Wavedash publishing config (https://docs.wavedash.com/cli/configuration).
 # `wavedash init` writes this file interactively; it is checked in so the upload is reproducible.
-# Fill game_id with the ID from the Wavedash Developer Portal, then:
-#   wavedash auth login
-#   node build.js          # writes dist/wavedash/index.html
+# game_id is the PRISM game on the CommendableBard71 team (`wavedash project list --team-id <id>`).
+#
+# Authenticate with your own API key, which never belongs in this file or the repo:
+#   $env:WAVEDASH_TOKEN = "wd_..."          # PowerShell, this session only
+#   node build.js -O2                       # writes dist/wavedash/index.html
 #   wavedash build push -m "js13k 2026 entry"
 #   wavedash publish <BUILD_ID>
-game_id = "YOUR_GAME_ID_HERE"
+game_id = "j97ddpqsg8v73xn49hp7pqfx0x8dr30z"
 
 # The exact file that ships in prism.zip, alone in its own folder so nothing else is uploaded.
 upload_dir = "./dist/wavedash"

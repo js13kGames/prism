@@ -27,8 +27,9 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    race once (Online → Create room / Join).
 2. The repository is at https://github.com/Arjun0014/PRISM (readable source in
    `src/`; the build is reproducible with the commands in README.md).
-3. For the Wavedash category: put the Developer Portal game ID in `wavedash.toml`, then
-   `wavedash auth login`, `node build.js -O2`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
+3. For the Wavedash category: `wavedash.toml` already points at the PRISM game
+   (`j97ddpqsg8v73xn49hp7pqfx0x8dr30z`, team CommendableBard71). Set `WAVEDASH_TOKEN` to your
+   API key, then `node build.js -O2`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — byte-identical to the file inside the zip.
 
 ## What changed in version 2.1 (DECISIONS.md §12–13)
