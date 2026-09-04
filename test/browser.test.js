@@ -24,6 +24,8 @@ if (fname != 'index.html') throw new Error('first entry is ' + fname);
 const html = method == 8 ? zlib.inflateRawSync(body) : body;
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-'));
 fs.writeFileSync(path.join(dir, 'index.html'), html);
+// A host page that embeds the game, the way a platform (Wavedash) serves it.
+fs.writeFileSync(path.join(dir, 'frame.html'), '<!doctype html><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style><iframe src=index.html></iframe>');
 console.log(`unzipped ${fname} (${html.length} bytes, method ${method}) to ${dir}`);
 
 // --- static server ---
@@ -280,6 +282,49 @@ async function runBrowser(name) {
   });
 
   // The mute button has to look muted: both the title and the in-game HUD swap their glyph on click.
+  // Embedded in an iframe, with and without the Wavedash SDK global. Only on Wavedash is the frame's own
+  // URL unshareable, so only there does the button copy the bare room code; js13kgames frames it too.
+  await test('platform-copy', async (page, ctx) => {
+    const relay = await startRelay();
+    const openRoom = async p => {
+      const fr = await (await p.waitForSelector('iframe')).contentFrame();
+      await fr.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 10000 });
+      await fr.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`);
+      await fr.click('[data-a=on]'); await fr.click('[data-a=cr]');
+      await fr.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+      return [fr, await fr.$eval('#ui b', b => b.textContent)];
+    };
+    try {
+      await page.goto(URL + 'frame.html');
+      const [fr, code] = await openRoom(page);
+      let label = await fr.$eval('[data-a=cp]', b => b.textContent);
+      if (label != 'Copy link') throw new Error('plain iframe says "' + label + '", expected Copy link');
+      await fr.click('[data-a=cp]');
+      await fr.waitForFunction(() => /Link copied/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      if (name == 'chromium') {
+        const got = await fr.evaluate(() => navigator.clipboard.readText());
+        if (got != URL + 'index.html#r=' + code) throw new Error(`clipboard holds "${got}", expected the frame url + #r=${code}`);
+      }
+
+      const page2 = await ctx.newPage();
+      page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
+      await page2.addInitScript(() => { self.Wavedash = { initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { } }; });
+      await page2.goto(URL + 'frame.html');
+      const [fr2, code2] = await openRoom(page2);
+      if (!await fr2.evaluate(() => self.Wavedash.initialized)) throw new Error('the game did not call Wavedash.init()');
+      label = await fr2.$eval('[data-a=cp]', b => b.textContent);
+      if (label != 'Copy code') throw new Error('on Wavedash the button says "' + label + '", expected Copy code');
+      await fr2.click('[data-a=cp]');
+      await fr2.waitForFunction(() => /Code copied/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      if (name == 'chromium') {
+        const got = await fr2.evaluate(() => navigator.clipboard.readText());
+        if (got != code2) throw new Error(`clipboard holds "${got}", expected the bare code ${code2}`);
+      }
+      await shots(page2, 'wavedash-lobby');
+    } finally { relay.close(); }
+  }, name == 'chromium' ? { permissions: ['clipboard-read', 'clipboard-write'] } : {},
+    route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
+
   await test('mute-glyph', async page => {
     await boot(page);
     const glyph = () => page.$eval('[data-a=sn]', b => b.textContent);

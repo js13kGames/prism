@@ -2,7 +2,7 @@
 import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W, H, R, min, max, hypot } from './sim.js';
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
-import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
+import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI, onWD } from './ui.js';
 import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic } from './audio.js';
 import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
@@ -204,18 +204,21 @@ function openLobby(code) {
     else if (st == 'close') lobby('Reconnecting…');
   });
 }
-// Copy the room link. navigator.clipboard needs a secure context and rejects silently when it is missing or
-// unpermitted, so the synchronous execCommand path (valid inside this click gesture, and over plain http) runs
-// first; if both fail the link itself is shown in the status line so it can still be shared by hand.
+// Copy the room link — or, on Wavedash, the code on its own: the game runs in that platform's iframe, so its
+// own URL is a sandbox path nobody can open, and the other player types the code in anyway.
+// navigator.clipboard needs a secure context and the clipboard-write permission, neither of which an embedded
+// game can count on, and it rejects silently — so the synchronous execCommand path (valid inside this click
+// gesture) runs first, and if both fail the text itself goes in the status line to be copied by hand.
 function copyLink() {
-  const u = location.href.split('#')[0] + '#r=' + room, t = document.createElement('textarea');
+  const wd = onWD(), u = wd ? room : location.href.split('#')[0] + '#r=' + room;
+  const t = document.createElement('textarea'), done = (wd ? 'Code' : 'Link') + ' copied!';
   let ok = 0;
   t.value = u; t.style.cssText = 'position:fixed;top:0;opacity:0';
   document.body.appendChild(t); t.select(); t.setSelectionRange(0, 1e5);
   try { ok = document.execCommand('copy'); } catch (e) { }
   t.remove();
-  try { navigator.clipboard.writeText(u).then(() => lobby('Link copied!'), () => { }); } catch (e) { }
-  lobby(ok ? 'Link copied!' : u);
+  try { navigator.clipboard.writeText(u).then(() => lobby(done), () => { }); } catch (e) { }
+  lobby(ok ? done : u);
 }
 function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = 0; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); }
 // Host drives the rounds: Start / Next round / Rematch all land here. Round 1 means a fresh match, so the

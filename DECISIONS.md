@@ -487,4 +487,32 @@ Size after the title work (`-O2`): 12,474 bytes — 838 under the limit.
   16 s so the two ~10 s levels have headroom on a loaded machine, not to paper over slow
   levels.
 
-Size with 40 levels (`-O2`): 12,877 bytes — 435 under the limit.
+Size with 40 levels and the platform-aware copy (`-O2`): 12,932 bytes — 380 under the limit.
+
+## 16 Copy link inside a platform frame; why not the Wavedash multiplayer SDK (2026-09-04)
+
+- **Copy link was broken on the Wavedash build**, and would have been useless even when it
+  worked. A platform runs the game in an iframe, so `location.href` is the frame's own URL
+  on the platform's sandbox host — not a page another player can open — and the async
+  Clipboard API needs `clipboard-write` delegated to the frame, which a game cannot assume.
+  The check is the Wavedash SDK global, not "am I in an iframe": **js13kgames frames games
+  too**, and there the frame's URL is a real public page, so the link works and is the better
+  thing to hand someone. On Wavedash only, the button reads **Copy code** and copies the bare
+  four-letter room code, which is what the Join box takes anyway (typing it was already
+  confirmed working). `platform-copy` covers both halves in both browsers: the suite serves a
+  host page with an iframe and drives the game inside it, asserting that a plain frame says
+  Copy link and puts `<frame url>#r=CODE` on the clipboard, while a frame with the SDK global
+  injected says Copy code, puts the bare code there, and has had `Wavedash.init()` called on it.
+- **The Wavedash SDK was considered for multiplayer and turned down.** It offers real lobbies
+  (`createLobby`, `joinLobby`, `listAvailableLobbies`) and — exactly the feature that would
+  have fixed the invite properly — `getLobbyInviteLink(true)`, which builds a shareable link
+  and copies it for you. But that link addresses a *Wavedash lobby*, not our relay room, so
+  taking it means running the match on their lobby transport, and `sendLobbyMessage` caps a
+  message at 500 characters. Our win message carries the winner's whole solution, which
+  routinely exceeds that; the alternative is their WebRTC P2P layer, a much larger
+  integration. Set against ~400 bytes of headroom, a path that cannot be exercised by either
+  suite, and a relay that already works on Wavedash (only the invite was broken), the
+  trade-off is not close. The same zip keeps one transport everywhere.
+- Worth recording for later: because the Wavedash deadline extension is for deploying only —
+  "no adding extra features or bugfixing allowed" — a Wavedash-specific integration would
+  have had to ship in the submitted zip. It was now or never, and the answer was never.

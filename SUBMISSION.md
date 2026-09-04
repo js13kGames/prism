@@ -2,9 +2,9 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **12,877 bytes** (limit 13,312; 435 bytes of headroom).
+- `dist/prism.zip` — **12,932 bytes** (limit 13,312; 380 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (18,181 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,252 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -83,11 +83,11 @@ gen.js         3946   1696    921
 audio.js       4649   2223   1295
 render.js      7645   4857   1745
 net.js         2343   1174    714
-ui.js          4185   2606   1236
-main.js       15185   7238   3830
+ui.js          4469   2644   1262
+main.js       15451   7256   3849
 style.css      2368   2339    950
 
-bundle raw 56429, minified 30177, roadrolled 15615, html 18181, zip 12877 (zopfli)
+bundle raw 56966, minified 30234, roadrolled 15686, html 18252, zip 12932 (zopfli)
 ```
 
 ## What was cut or changed
@@ -135,7 +135,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 
 ## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (12,877 bytes), one full run after the final build (the
+Suite B against the unzipped release zip (12,932 bytes), one full run after the final build (the
 two runs before it, on the build without the ghost-lifetime fix, were also 28/28 in both browsers). The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
 
 | browser | test | result |
@@ -153,6 +153,7 @@ two runs before it, on the build without the ghost-lifetime fix, were also 28/28
 | chromium | resize | pass |
 | chromium | audio-gesture | pass |
 | chromium | mute-glyph | pass |
+| chromium | platform-copy | pass |
 | chromium | room-link | pass |
 | firefox | boot | pass |
 | firefox | screens | pass |
@@ -167,9 +168,10 @@ two runs before it, on the build without the ghost-lifetime fix, were also 28/28
 | firefox | resize | pass |
 | firefox | audio-gesture | pass |
 | firefox | mute-glyph | pass |
+| firefox | platform-copy | pass |
 | firefox | room-link | pass |
 
-Totals: 28/28. No console errors or warnings.
+Totals: 30/30. No console errors or warnings.
 
 What `online-race` now proves, per browser: two pages get the same generated level and a `Round 1` card; the
 host sees `rival racing` when the guest presses Play but receives **no** stroke and **no** ghost run; a third

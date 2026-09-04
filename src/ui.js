@@ -2,6 +2,10 @@
 import { COLS } from './sim.js';
 import { ACT, AC } from './levels.js';
 
+// True on Wavedash, which injects this global before the game boots. Only that platform needs the room code
+// instead of a link: js13kgames also runs the game in an iframe, but there the frame's URL is a real page.
+export const onWD = () => !!self.Wavedash;
+
 export const GLYPH = '↑⇒✶⋮❋⇢⟳';
 const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Indigo phase,Violet flip'.split(',');
 
@@ -37,7 +41,7 @@ export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${ext
 <div><button data-a=bk>Levels</button>${last ? '' : '<button class=b data-a=nx>Next</button>'}</div></div>`;
 
 export const lobbyUI = (status, code, n, host) => `<div class=t><h2>Online race</h2><p>${status}</p>${code ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
-<div>${code ? `<button data-a=cp>Copy link</button>${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button>` : `<button class=b data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
+<div>${code ? `<button data-a=cp>Copy ${onWD() ? 'code' : 'link'}</button>${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button>` : `<button class=b data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
 <button data-a=bk>Back</button></div>`;
 
 // Round start card: the solid menu backdrop, because the rainbow h1 is unreadable over a bright sky.
