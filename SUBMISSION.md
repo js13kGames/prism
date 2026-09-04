@@ -102,3 +102,34 @@ Deviations from the original spec, all logged in DECISIONS.md:
   log a network error for the failed dynamic import (outside our code).
 
 ## Test results (suite A: 30/30 levels solved, 30/30 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
+
+Suite B against the unzipped release zip (11,309 bytes), two consecutive full runs after the final build (a third run, on the previous build, was 22/24 with the only failures being the fail-path test pointing at a level that no longer dies quickly — fixed by pointing it at level 4):
+
+| browser | test | run 1 | run 2 |
+|---|---|---|---|
+| chromium | boot | pass | pass |
+| chromium | screens | pass | pass |
+| chromium | level1-input | pass | pass |
+| chromium | undo-clear-ink | pass | pass |
+| chromium | all-levels | pass | pass |
+| chromium | fail-path | pass | pass |
+| chromium | mobile-portrait | pass | pass |
+| chromium | mobile-landscape | pass | pass |
+| chromium | offline-lobby | pass | pass |
+| chromium | online-race | pass | pass |
+| chromium | resize | pass | pass |
+| chromium | audio-gesture | pass | pass |
+| firefox | boot | pass | pass |
+| firefox | screens | pass | pass |
+| firefox | level1-input | pass | pass |
+| firefox | undo-clear-ink | pass | pass |
+| firefox | all-levels | pass | pass |
+| firefox | fail-path | pass | pass |
+| firefox | mobile-portrait | pass | pass |
+| firefox | mobile-landscape | pass | pass |
+| firefox | offline-lobby | pass | pass |
+| firefox | online-race | pass | pass |
+| firefox | resize | pass | pass |
+| firefox | audio-gesture | pass | pass |
+
+Totals: 24/24, 24/24. No console errors or warnings in either run.
