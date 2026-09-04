@@ -2,7 +2,7 @@
 import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W, H, R, min, max, hypot } from './sim.js';
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
-import { titleUI, selectUI, hudUI, winUI, lobbyUI } from './ui.js';
+import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
 import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic } from './audio.js';
 import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
@@ -34,16 +34,17 @@ const total = () => L._ink.reduce((s, v) => s + v, 0);
 // Mark which draw-phase strokes would fall on Play (rendered faded) by settling a throwaway run.
 const preview = () => createRun(L, strokes)._s.forEach((s, i) => strokes[i]._sup = s._sup);
 function hud() {
-  if ((scr != 2 && scr != 3) || !L) return;
+  if ((scr != 2 && scr != 3) || !L || over) return;
   if (!run) preview();
-  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, hintOn && !played ? L._hint : ''));
+  const tag = scr == 3 ? 'Round ' + round + ' · ' + mine() + '–' + theirs() + (ghosts.some(g => g._go) ? ' · rival racing' : '') : '';
+  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, hintOn && !played ? L._hint : '', snd, tag));
 }
 
-// Load level i or the daily/online level when i == LEVELS.length (seed from `seed`).
+// Load level i, or the daily/online generated level when i == LEVELS.length (from `seed`).
 function loadLevel(i, seed) {
   li = i; daily = i == LEVELS.length ? seed : 0;
   L = parseLevel(daily ? gen(seed)[0] : LEVELS[i]);
-  strokes = []; run = null; cur = null; played = 0; PARTS.length = 0;
+  strokes = []; run = null; cur = null; played = 0; over = 0; PARTS.length = 0;
   col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2; hud();
 }
 
@@ -65,17 +66,17 @@ const act = {
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : show(titleUI(snd)); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
   c: v => { col = +v; hud(); playNote(col); },
-  u: () => { if (!run && strokes.length) { strokes.pop(); hud(); if (scr == 3) send(['u']); } },
-  x: () => { if (!run && strokes.length) { strokes = []; hud(); if (scr == 3) send(['c']); } },
+  u: () => { if (!run && strokes.length) { strokes.pop(); hud(); } },
+  x: () => { if (!run && strokes.length) { strokes = []; hud(); } },
   p: play, r: rewind,
   nx: () => { if (li < LEVELS.length - 1) loadLevel(li + 1); else goSelect(); },
-  cr: () => openLobby(1), jn: () => openLobby((Q('#j') || {}).value), lv0: goLobby, cp: () => { try { navigator.clipboard.writeText(location.href.split('#')[0] + '#r=' + room); } catch (e) { } },
+  cr: () => openLobby(1), jn: () => openLobby((Q('#j') || {}).value), lv0: leaveRoom, cp: copyLink,
   st: raceStart,
 };
 ui.onclick = e => { const b = e.target.closest('[data-a]'); if (b) { initAudio(); sfx(8); act[b.dataset.a](b.dataset.v); } };
 onkeydown = e => {
   const k = e.key;
-  if (scr == 2 || scr == 3) {
+  if (scr == 2 || (scr == 3 && !over)) {
     if (k >= '1' && k <= '7' && L._ink[k - 1]) act.c(k - 1);
     else if (k == 'z') act.u(); else if (k == 'c') act.x();
     else if (k == ' ') { e.preventDefault(); run ? rewind() : play(); }
@@ -103,7 +104,7 @@ cv.onpointermove = e => {
 cv.onpointerup = cv.onpointercancel = endStroke;
 function endStroke() {
   if (!cur) return;
-  if (cur._len >= .3) { strokes.push(cur); playNote(cur._c); if (scr == 3) send(['k', cur._c, cur._p.map(v => +v.toFixed(1))]); }
+  if (cur._len >= .3) { strokes.push(cur); playNote(cur._c); }
   cur = null; hud();
 }
 
@@ -126,7 +127,7 @@ function frame(ts) {
   if (run && !run._state) {
     acc += dt;
     for (let n = 0; acc >= DT && n < 4; n++) { step(run); acc -= DT; events(run); }
-    if (run._state == 1) onWin(); else if (run._state == 2) { failT = T + .8; if (scr == 3) send(['f']); }
+    if (run._state == 1) onWin(); else if (run._state == 2) failT = T + .8;
   } else if (run && run._state == 2 && T > failT) rewind();
   for (const gh of ghosts) if (gh._run && !gh._run._state) for (let n = 0; n < 1; n++) { step(gh._run); events(gh._run, 1); }
   render(dt);
@@ -138,7 +139,7 @@ function onWin() {
   if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
   else if (daily && scr == 2) try { localStorage.prism26_daily = daily; } catch (e) { }
   setMusic(1);
-  if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId(), run._t); return; }
+  if (scr == 3) { send(['w', +run._t.toFixed(3), strokes.map(k => [k._c, k._p.map(v => +v.toFixed(1))])]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= LEVELS.length - 1 || daily, daily ? 'Daily done!' : ''));
 }
 
@@ -151,7 +152,7 @@ function render(dt) {
     drawStrokes(g, run ? run._s : strokes, cur);
     drawStart(g, L._sx, L._sy, L._sd); drawGem(g, L._gx, L._gy, T);
     if (run) { if (run._state != 2) drawUnicorn(g, run._u, T); }
-    else drawUnicorn(g, { _x: L._sx, _y: L._sy - R, _dir: L._sd, _g: 1, _gr: 1 }, 0);
+    else if (!over) drawUnicorn(g, { _x: L._sx, _y: L._sy - R, _dir: L._sd, _g: 1, _gr: 1 }, 0);
   } else { // title / select backdrop: sky, rainbow arc, idle unicorn
     const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#6ea8ff'); sky.addColorStop(1, '#ffd6ea');
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
@@ -162,44 +163,80 @@ function render(dt) {
   drawParts(g, dt);
 }
 
-// ---- Online race (docs/06): lobby, ghosts (other players' sims run locally), best-of-3 ----
-let room = '', ghosts = [], seed = 0, round = 0, raceOver = '', score = {};
+// ---- Online race (docs/06): lobby, best-of-3 rounds, winner's replay ----
+// Nothing about a player's paint leaves their machine until they win the round: the only in-round message is
+// 'p' (started running), so nobody can read a rival's solution off the screen while they still need it. The
+// winner's strokes travel with their 'w', and everyone else watches that run replay on the result screen.
+let room = '', ghosts = [], round = 0, over = 0, score = {};
 const isHost = () => [myId(), ...ghosts.map(g => g._id)].sort()[0] == myId();
 const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost()));
+const mine = () => score[myId()] || 0;
+const theirs = () => ghosts.reduce((s, g) => s + (score[g._id] || 0), 0);
+const scoreLine = () => `You ${mine()} – ${theirs()} Rival`;
+const showRes = () => show(raceUI(over._w, over._s, scoreLine(), over._d, isHost()));
 function openLobby(code) {
-  if (code === undefined) { const h = location.hash.match(/#r=(w{4})/); if (!h) return; code = h[1]; }
-  ghosts = []; raceOver = ''; score = {};
+  if (code === undefined) { const h = location.hash.match(/#r=([a-zA-Z]{4})/); if (!h) return; code = h[1]; }
+  ghosts = []; over = 0; round = 0; score = {};
   join(code, (st, data) => {
     if (st == 'err') { room = ''; lobby(data); }
     else if (st == 'open') { room = data.room; lobby('Connected. Share the code!'); }
-    else if (st == 'n') { ghosts = data.map(i => ghosts.find(g => g._id == i) || { _id: i, _s: [], _run: null }); if (!L || raceOver) lobby(raceOver || (isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…')); }
+    else if (st == 'n') {
+      ghosts = data.map(i => ghosts.find(g => g._id == i) || { _id: i, _s: [], _run: null });
+      if (over) showRes(); else if (!L) lobby(isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…'); else hud();
+    }
     else if (st == 'msg') onMsg(data);
     else if (st == 'close') lobby('Reconnecting…');
   });
 }
-function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0; round++; send(['s', s, round]); startRound(s, round); }
-function startRound(s, r) { seed = s; round = r; raceOver = ''; ghosts.forEach(gh => { gh._s = []; gh._run = null; }); loadLevel(LEVELS.length, s); }
+// Copy the room link. navigator.clipboard needs a secure context and rejects silently when it is missing or
+// unpermitted, so the synchronous execCommand path (valid inside this click gesture, and over plain http) runs
+// first; if both fail the link itself is shown in the status line so it can still be shared by hand.
+function copyLink() {
+  const u = location.href.split('#')[0] + '#r=' + room, t = document.createElement('textarea');
+  let ok = 0;
+  t.value = u; t.style.cssText = 'position:fixed;top:0;opacity:0';
+  document.body.appendChild(t); t.select(); t.setSelectionRange(0, 1e5);
+  try { ok = document.execCommand('copy'); } catch (e) { }
+  t.remove();
+  try { navigator.clipboard.writeText(u).then(() => lobby('Link copied!'), () => { }); } catch (e) { }
+  lobby(ok ? 'Link copied!' : u);
+}
+function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = 0; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); }
+// Host drives the rounds: Start / Next round / Rematch all land here. Round 1 means a fresh match, so the
+// scores reset on both sides from the round number alone (a rejoining player picks up the same rule).
+function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0, r = over && over._d ? 1 : round + 1; send(['s', s, r]); startRound(s, r); }
+function startRound(s, r) {
+  round = r; if (r == 1) score = {};
+  ghosts.forEach(gh => { gh._s = []; gh._run = null; gh._go = 0; });
+  loadLevel(LEVELS.length, s);
+  show(cardUI('Round ' + r, r > 1 ? scoreLine() : 'First to two rounds takes the match'));
+  setTimeout(() => { if (scr == 3 && !over) hud(); }, 1400);
+}
 function onMsg([type, id, ...a]) {
   let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _run: null });
   if (type == 's') startRound(a[0], a[1]);
-  else if (type == 'k') gh._s.push(mkStroke(a[0], a[1]));
-  else if (type == 'u') gh._s.pop(); else if (type == 'c') gh._s = [];
-  else if (type == 'p' && L) gh._run = createRun(L, gh._s);
-  else if (type == 'f') gh._run = null;
-  else if (type == 'w') raceWin(id, a[0]);
+  else if (type == 'p') { gh._go = 1; hud(); }                       // rival is running — no paint, just presence
+  else if (type == 'w') { gh._s = a[1].map(k => mkStroke(k[0], k[1])); if (L) gh._run = createRun(L, gh._s); raceWin(id, a[0]); }
 }
-// Best of three: first to two round wins (or three rounds) takes the match; scores then reset for a rematch.
+// Round over. First to the gem takes the round; best of three (or three rounds) takes the match. The loser's
+// own run is dropped so the winner's replay has the stage; the winner's unicorn stays parked on the gem.
 function raceWin(id, t) {
-  if (raceOver) return;
+  if (over) return;
+  const won = id == myId();
   score[id] = (score[id] || 0) + 1;
-  const me = score[myId()] || 0, them = ghosts.reduce((s, g) => s + (score[g._id] || 0), 0), done = me > 1 || them > 1 || round > 2;
-  raceOver = (id == myId() ? 'You win' : 'Ghost ' + id + ' wins') + ' round ' + round + ' in ' + t.toFixed(2) + 's · you ' + me + ' – ' + them + ' them' +
-    (done ? me > them ? ' · You take the match!' : me < them ? ' · They take the match.' : ' · Match drawn.' : '');
-  if (done) { round = 0; score = {}; }
-  run = null; lobby(raceOver);
+  setMusic(1);                       // the winner's fanfare already fired from their own win event
+  if (!won) { run = null; sfx(6); }
+  over = {
+    _w: won, _d: mine() > 1 || theirs() > 1 || round > 2,
+    _s: (won ? 'You reached the gem first, in ' : 'Your rival got there first, in ') + t.toFixed(2) + 's',
+  };
+  showRes();
 }
 
 window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get scr() { return scr; }, get strokes() { return strokes; } };
+// Wavedash: the platform injects a global `Wavedash` before the game boots, so nothing is loaded from outside
+// the zip; everywhere else (js13k, offline, file://) this block does nothing.
+try { const W = self.Wavedash; if (W && !W.initialized) { W.init(); if (W.readyForEvents) W.readyForEvents(); } } catch (e) { }
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);

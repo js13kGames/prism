@@ -29,18 +29,29 @@ constant `NET = { import: 'TODO', host: 'TODO', ... }`, keep the lobby working
 against a local echo (so the UI is testable), and write in `SUBMISSION.md` in bold
 that the two URLs must be filled in before submitting. Do not guess URLs.
 
-Load PartySocket **lazily** with a dynamic `import()` only when the player opens the
-lobby, so the offline game never touches the network and a failed import becomes a
-lobby status message.
+**As built** (DECISIONS.md §10): PartySocket is not used at all. The relay speaks plain
+WebSocket, so `net.js` opens one when the player opens the lobby — no import, nothing
+fetched, and every failure degrades to a lobby status message.
 
 ## Mode: Race
 
 Two players (accept up to 4; everyone races) get the same generated level (docs/05)
-— or, if the generator was cut, level `1 + seed % 20`. Everyone draws at the same
-time and sees the others' strokes as translucent ghosts. Each player presses Play
-independently as often as they like. First unicorn to reach the gem wins the round.
-The host starts the next round with a new seed; first to two round wins (or three
-rounds) takes the match, then scores reset for a rematch.
+— or, if the generator was cut, level `1 + seed % 20`. Everyone draws at the same time
+and presses Play independently, as often as they like. First unicorn to reach the gem
+wins the round. The host starts the next round with a new seed; first to two round wins
+(or three rounds) takes the match, and a rematch resets the scores.
+
+**Paint is private while it matters** (DECISIONS.md §13). Live ghosts were specified
+here originally and shipped in v2; they turned the race into a copying contest, because
+whoever drew second could trace the other's solution. Nothing about a player's paint
+leaves their machine until they have won: the only in-round message is "started
+running". The winner's strokes travel with their win, and everyone else then watches
+that run replay behind the result card — the ghost is the prize, not the leak.
+
+Round and match boundaries are explicit: a `Round N` card over the level at the start,
+a `Round N · 1–0` tag in the HUD header (plus `· rival racing` once a rival has pressed
+Play), and a result card naming the winner, the time, the score, and the one next step
+(Next round / Rematch for the host, "Waiting for the host…" for everyone else, Leave).
 
 ## Rooms
 
@@ -61,21 +72,24 @@ chosen on connect.
 ```
 ["h", id, ts]                  hello, sent on connect and on every new hello seen (so late joiners learn everyone)
 ["s", id, seed, round]         host announces the seed (host = lowest id among known ids; recomputed when membership changes)
-["k", id, c, [pts…]]           a finished stroke; points rounded to 1 decimal
-["u", id]                      undo last stroke
-["c", id]                      clear
-["p", id]                      pressed play (ghost unicorn animates: we run their sim locally from their strokes — deterministic)
-["w", id, t]                   reached the gem at time t (sim time); first "w" per round wins
-["r", id]                      ready for the next round
+["p", id]                      pressed play — presence only, no geometry
+["w", id, t, [[c, [pts…]]…]]   reached the gem at sim time t, with the paint that did it
+                               (points rounded to 1 decimal); the first "w" per round wins
 ```
 
-Ghost sims: because the sim is deterministic, we can *run the other player's unicorn
-locally* from their strokes when we receive `"p"`, and draw it at 40% alpha. No
+Ghost sims: because the sim is deterministic, the winner's strokes are enough to *run
+their unicorn locally* and draw it at 35 % alpha on everyone else's result screen. No
 position streaming, no interpolation, no desync handling. This is the entire reason
 determinism is non-negotiable.
 
-Conflict rule: a `"w"` message and our own win are ordered by sim time `t`; equal `t`
-→ lowest id wins. Show "You win!" / "Ghost wins!" and a scoreboard line.
+Conflict rule as built: the first `"w"` a client processes decides the round (its own
+win included), which makes it a race to finish rather than a race for the best time.
+The time in the message is shown, not compared. Two wins inside one relay round trip
+could in principle be scored differently on the two machines; nothing in the match
+depends on more than the score, so it is left alone.
+
+Match reset travels in the round number: the host asks for round 1 after a decided
+match, and every client clears its score when it sees round 1.
 
 ## Lobby UI
 
@@ -85,10 +99,15 @@ playable solo.
 
 ## Tests
 
-`browser.test.js`: open the lobby with network disabled (`page.route('**', abort)`
-for external hosts) → status shows an error string, no console errors, Back returns
-to the title. A second test with a stubbed WebSocket server in the test process (or a
-stubbed `PartySocket` global injected via `page.addInitScript`) exchanges one `"k"`
-and one `"p"` message between two pages and asserts the ghost stroke appears. If the
-stub approach is too costly in time, the first test is mandatory and the second is
-optional — log it.
+`browser.test.js` (as built):
+- `offline-lobby`: open the lobby with network disabled (`ctx.route` aborts external
+  hosts) → status shows an error string, no console errors, Back returns to the title.
+- `online-race`: two pages and an in-process relay (`test/relay.js`). Create, join,
+  same level, round card, HUD tag. The guest draws and runs, and the host must see
+  `rival racing` but **no** stroke and **no** ghost run — the leak is asserted against.
+  A third raw client then wins the round, and both pages must show the result card, the
+  score, and a running replay of the winner's paint; a second win from it decides the
+  match and the rematch must reset the score to 0–0.
+- `room-link`: Copy link puts the `#r=CODE` URL on the clipboard (read back in
+  chromium), a page opened on that link joins the room, and Leave really leaves — a
+  round started afterwards must not pull the leaver back in.

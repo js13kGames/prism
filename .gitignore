@@ -4,3 +4,5 @@ dist/size.txt
 dist/*.tmp
 test-results
 tools/discover*.js
+.gstack/
+dist/wavedash/

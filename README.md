@@ -26,9 +26,10 @@ edges. All the agency is in the paint.
 
 30 hand-made levels teach the colours one at a time. **Daily** is a new generated level
 every day (same for everyone). **Online** is a best-of-three race: everyone in a room gets
-the same generated level, draws at the same time, sees the others' paint as ghosts, and
-the first unicorn to reach the gem wins the round; the host starts each new round on a
-fresh level.
+the same generated level and draws at the same time, and the first unicorn to reach the
+gem wins the round. Nobody sees anybody else's paint while the round is live — copying is
+the whole reason that would be a bad idea — but the winner's run replays for everyone on
+the result screen. The host starts each round, and the match resets on a rematch.
 
 ### Controls
 
@@ -80,9 +81,26 @@ CSS and JS into a single `dist/index.html`, writes `dist/prism.zip` with a hand-
 container around a zopfli deflate stream, verifies it with `unzip`, prints a per-module
 size table (`dist/size.txt`), and exits non-zero if the zip exceeds 13,312 bytes.
 
-The shipped page has no external resources. The only network access is the optional
-Online mode, which lazily imports PartySocket from the js13kGames server and connects to
-the game's relay (`wss://relay.js13kgames.com/prism/<room>`).
+The shipped page has no external resources — no CDN, no fonts, no imports. The only network
+access is the optional Online mode, which opens a plain WebSocket to the js13kGames relay
+(`wss://relay.js13kgames.com/prism/<room>`) when you create or join a room.
+
+### Publishing on Wavedash
+
+`build.js` also writes `dist/wavedash/index.html` — the same single file that ships in the
+zip, alone in its own folder, which is what `upload_dir` in [wavedash.toml](wavedash.toml)
+points at. Put the game ID from the Developer Portal in that file, then:
+
+```bash
+wavedash auth login
+node build.js -O2
+wavedash build push -m "js13k 2026 entry"
+wavedash publish <BUILD_ID>
+```
+
+Wavedash injects a global `Wavedash` object before the game boots, so the SDK is not a file
+we ship: `src/main.js` calls `init()`/`readyForEvents()` only if that global exists, and the
+same build runs unchanged offline and on js13kgames.com.
 
 ## Tests
 

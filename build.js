@@ -57,6 +57,10 @@ const eocd = Buffer.concat([u32(0x06054b50), u16(0), u16(0), u16(1), u16(1), u32
 const zip = Buffer.concat([local, body, central, eocd]);
 fs.writeFileSync('dist/prism.zip', zip);
 
+// 5b. Wavedash upload dir: the same single file, alone in its own folder (wavedash.toml points upload_dir here).
+fs.mkdirSync('dist/wavedash', { recursive: true });
+fs.writeFileSync('dist/wavedash/index.html', html);
+
 // 6. Verify with Info-ZIP if available.
 try {
   const l = execSync('unzip -l dist/prism.zip', { encoding: 'utf8' });

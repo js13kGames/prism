@@ -351,3 +351,70 @@ Size after v2 (`-O1`): 11,325 bytes — 1,987 under the limit.
   and no console warning is produced.
 - The stroke "tick" effect (sound 0) is replaced by the colour's note; the table entry
   is kept because removing it would renumber the other sounds for ~20 bytes.
+
+## 12 Copy link, mute button, Wavedash (2026-09-04)
+
+- **Copy link did nothing.** The handler was a bare `navigator.clipboard.writeText`
+  in a `try`. The Clipboard API needs a secure context, so on a plain-http LAN or
+  `file://` page `navigator.clipboard` is undefined (caught, silent), and when it
+  exists but is refused the failure arrives as a rejected promise the `try` cannot
+  catch — an unhandled rejection, which the zero-console-errors rule forbids.
+  `copyLink()` now runs the synchronous `execCommand('copy')` path first (valid
+  inside the click gesture and over plain http), still calls the async API with both
+  handlers attached, and reports the result in the lobby status line — "Link copied!"
+  or, if both paths fail, the URL itself so it can be copied by hand.
+- **The link did not open the room.** `openLobby` matched `/#r=(w{4})/` — a typo for
+  `\w{4}` that only matched the literal "wwww", so a shared link fell through to the
+  create/join form. Now `/#r=([a-zA-Z]{4})/`, which is what the room alphabet is.
+  Covered by the new `room-link` browser test: the copied text is read back out of
+  the clipboard (chromium), and a second page opened on the link joins the room
+  through the in-process relay (both browsers).
+- **Mute button did not change.** The HUD button was a hard-coded `♪`. It now shows
+  the title screen's 🔊/🔇 and dims (`.g`) when muted, so both screens agree; the
+  `mute-glyph` test asserts the glyph changes on both. Muting also routes all audio
+  through one master gain, so notes already scheduled ahead (up to ~2 s of bass) stop
+  immediately instead of playing on after the click.
+- **Wavedash.** The platform injects a global `Wavedash` before the game boots
+  (docs.wavedash.com/sdk/setup), so integration adds no external resource and the zip
+  stays rule-legal: a guarded three-line block calls `init()` and `readyForEvents()`
+  when the global exists and does nothing anywhere else. `wavedash.toml` is checked
+  in (what `wavedash init` scaffolds; `game_id` is a placeholder until the Developer
+  Portal issues one) and `build.js` writes `dist/wavedash/index.html` so `upload_dir`
+  contains exactly the one file that ships in the zip. Leaderboards/achievements were
+  left out: they need portal-side IDs that do not exist yet, and the bytes are better
+  kept as headroom.
+
+Size after these fixes (`-O1`): 11,903 bytes — 1,409 under the limit.
+
+## 13 Online race: no live ghosts, clearer rounds (2026-09-04)
+
+- **Ghosts leaked the solution.** Every stroke was broadcast as it was drawn (`k`/`u`/`c`)
+  and the rival's run was rendered live from `p`, so both players could simply copy the
+  other's paint — the race was decided by whoever drew second. The in-round protocol is
+  now one message: `p`, "I have started running", which carries no geometry. A player's
+  strokes travel only with their `w` (win), and everyone else then watches that run
+  replay behind the result card. Removing `k`/`u`/`c`/`f` handling paid for most of the
+  new UI.
+- **Round and match boundaries were invisible.** A round used to begin by silently
+  swapping the level in, and end by dumping one long sentence into the lobby screen.
+  Now: a `Round N` card over the level for 1.4 s at the start (with the score from round
+  2 on), a persistent `Round N · 1–0` tag in the HUD header (plus `· rival racing` once a
+  rival has pressed Play), and a result card — `Round won!` / `Round lost`, who reached
+  the gem first and in what time, the running score, and one next step: **Next round** /
+  **Rematch** for the host, "Waiting for the host…" for everyone else, **Leave** for both.
+- **Match reset is driven by the round number**, not by a local flag: the host asks for
+  round 1 after a decided match, and every client resets its score when it sees round 1.
+  A client that joins late therefore cannot end up with a different score than the host.
+- The result card uses a lighter overlay (`.q`) so the winner's replay reads through it;
+  the round card keeps the solid backdrop because the rainbow `h1` is unreadable over a
+  bright sky. The loser's own idle unicorn is hidden while a result is showing, so the
+  only unicorn on the stage is the winner's ghost.
+- First to the gem wins the round (unchanged): the first `w` to arrive decides it, and
+  the time shown is the winner's sim time. Best of three, or three rounds.
+
+- **Leave now leaves.** The lobby Leave button used to re-show the create/join form
+  without closing the socket, so the host's next round pulled the player back into a race
+  they had left. It closes the connection and clears the room state; the result card's
+  Leave goes all the way back to the title (which already disconnected).
+
+Size after the race rework (`-O2`): 12,138 bytes — 1,174 under the limit.

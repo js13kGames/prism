@@ -17,11 +17,12 @@ export function selectUI(prog, daily, n) {
   return `<div class=t><h2>Levels</h2><div class=a>${d}</div><div>${daily ? `<button data-a=dy>${daily}</button>` : ''}<button data-a=bk>Back</button></div></div>`;
 }
 
-// In-game HUD. ink = remaining per colour, L = level, col = selected, play = run active, hint shown until first play.
-export function hudUI(L, col, ink, play, hint) {
+// In-game HUD. ink = remaining per colour, L = level, col = selected, play = run active, hint shown until
+// first play, tag = race status (round, score, whether a rival is running) shown before the level name.
+export function hudUI(L, col, ink, play, hint, snd, tag) {
   let pal = '';
   for (let c = 0; c < 7; c++) if (L._ink[c]) pal += `<button class="k${c == col ? ' s' : ''}" data-a=c data-v=${c} title="${NAMES[c]}" style=background:${COLS[c]}>${GLYPH[c]}<i><b id=i${c} style=width:${100 * ink[c] / L._ink[c]}%></b></i></button>`;
-  return `<div class=h><button data-a=bk>‹</button><span>${L._name}${hint ? ' · ' + hint : ''}</span><button data-a=sn>♪</button></div>` +
+  return `<div class=h><button data-a=bk>‹</button><span>${tag ? tag + ' · ' : ''}${L._name}${hint ? ' · ' + hint : ''}</span><button data-a=sn${snd ? '' : ' class=g'}>${snd ? '🔊' : '🔇'}</button></div>` +
     (play ? `<div class=r><button class=b data-a=r>⟲ Rewind</button></div>` :
       `<div class=r>${pal}<button data-a=u title=Undo>↶</button><button data-a=x title=Clear>✕</button><button class=b data-a=p>▶ Play</button></div>`);
 }
@@ -32,3 +33,11 @@ export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${ext
 export const lobbyUI = (status, code, n, host) => `<div class=t><h2>Online race</h2><p>${status}</p>${code ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
 <div>${code ? `<button data-a=cp>Copy link</button>${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button>` : `<button class=b data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
 <button data-a=bk>Back</button></div>`;
+
+// Round start card: the solid menu backdrop, because the rainbow h1 is unreadable over a bright sky.
+export const cardUI = (h, p) => `<div class=t><h1>${h}</h1><p>${p}</p></div>`;
+
+// Round / match result. The winner's run is replaying behind this one, so it uses the lighter .q overlay.
+export const raceUI = (won, sub, score, done, host) => `<div class="t q"><h2>${done ? won ? 'You take the match!' : 'They take the match.' : won ? 'Round won!' : 'Round lost'}</h2>
+<p>${sub}</p><p><b>${score}</b></p>${host ? '' : '<p>Waiting for the host…</p>'}
+<div>${host ? `<button class=b data-a=st>${done ? 'Rematch' : 'Next round'}</button>` : ''}<button data-a=bk>Leave</button></div></div>`;

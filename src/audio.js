@@ -3,9 +3,9 @@
 // I–V–vi–IV backing on oscillators; drawing a colour, and the unicorn touching it, play that colour's note.
 // The AudioContext is created on the first user gesture (initAudio). `snd` is the persisted mute flag.
 export let snd = 1;
-export const setSnd = v => snd = v;
-let ac;
-export function initAudio() { if (!ac) try { ac = new AudioContext(); } catch (e) { } }
+export const setSnd = v => { snd = v; if (mg) mg.gain.value = v; }; // gain kills notes already scheduled ahead
+let ac, mg;
+export function initAudio() { if (!ac) try { ac = new AudioContext(); mg = ac.createGain(); mg.gain.value = snd; mg.connect(ac.destination); } catch (e) { } }
 
 // ZzFX micro: renders one sound from its parameter list and plays it. Kept verbatim-ish for byte size.
 function zzfx(p = 1, k = .05, b = 220, e = 0, r = 0, t = .1, q = 0, D = 1, u = 0, y = 0, v = 0, z = 0, l = 0, E = 0, A = 0, F = 0, c = 0, w = 1, m = 0, B = 0) {
@@ -16,7 +16,7 @@ function zzfx(p = 1, k = .05, b = 220, e = 0, r = 0, t = .1, q = 0, D = 1, u = 0
     f = (l ? 1 - B + B * M.sin(d * a / l) : 1) * (0 < f ? 1 : -1) * M.abs(f) ** D * p * .3 * (a < e ? a / e : a < e + m ? 1 - (a - e) / m * (1 - w) : a < e + m + r ? w : a < h - c ? (h - a - c) / t * w : 0),
     f = c ? f / 2 + (c > a ? 0 : (a < h - c ? 1 : (h - a) / c) * k[a - c | 0] / 2) : f),
     x = (b += u += y) * M.cos(A * H++), g += x - x * E * (1 - 1E9 * (M.sin(a) + 1) % 2), n && ++n > z && (b += v, C += v, n = 0), !l || ++I % l || (b = C, u = G, n = n || 1);
-  p = ac.createBuffer(1, h, R); p.getChannelData(0).set(k); b = ac.createBufferSource(); b.buffer = p; b.connect(ac.destination); b.start();
+  p = ac.createBuffer(1, h, R); p.getChannelData(0).set(k); b = ac.createBufferSource(); b.buffer = p; b.connect(mg); b.start();
 }
 
 // 0 tick(colour) 1 play 2 bounce 3 crumble 4 fling 5 flip 6 fail 7 win 8 click 9 gate 10 paint lands
@@ -46,7 +46,7 @@ export const note = (d, o = 0) => 261.63 * 2 ** (o + (d / 7 | 0) + SC[d % 7] / 1
 let nextT = 0, beat = 0, mode = 1; // mode: 1 calm (draw/menus), 2 lively (play)
 function tone(f, t, d, type, g) {
   const o = ac.createOscillator(), v = ac.createGain();
-  o.type = type; o.frequency.value = f; o.connect(v); v.connect(ac.destination);
+  o.type = type; o.frequency.value = f; o.connect(v); v.connect(mg);
   v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + .02); v.gain.exponentialRampToValueAtTime(.001, t + d);
   o.start(t); o.stop(t + d);
 }

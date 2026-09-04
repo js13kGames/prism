@@ -193,6 +193,7 @@ async function runBrowser(name) {
     const relay = await startRelay();
     const page2 = await ctx.newPage();
     page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
+    let spy;
     try {
       for (const p of [page, page2]) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); }
       const at = (label, pr) => pr.catch(e => { throw new Error(label + ': ' + String(e.message).slice(0, 100)); });
@@ -205,16 +206,56 @@ async function runBrowser(name) {
       const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
       if (await guest.$('[data-a=st]')) throw new Error('both pages think they are host');
       await host.click('[data-a=st]');
+      const txt = p => p.$eval('#ui', u => u.textContent);
+      for (const p of [page, page2]) await at('round 1 card', p.waitForFunction(() => /Round 1/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 }));
+      await shots(host, 'race-round-card');
       for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
       const names = await Promise.all([page, page2].map(p => p.$eval('.h span', s => s.textContent)));
       if (names[0] != names[1]) throw new Error('players got different levels: ' + names);
+      if (!/Round 1 · 0–0/.test(names[0])) throw new Error('HUD has no round/score tag: ' + names[0]);
+
+      // Drawing and running must reveal nothing: the host may learn that a rival is running, never their paint.
       await guest.click('[data-a=c][data-v="1"]');
       await drag(guest, line(.5, 2, 2.5, 2)); // sky above the start platform: never geometry in generated levels
-      await at('ghost stroke', host.waitForFunction(() => __prism.gs()[0] && __prism.gs()[0][0] == 1, null, { timeout: 5000 }));
       await guest.click('[data-a=p]');
-      await at('ghost run', host.waitForFunction(() => __prism.gs()[0][1], null, { timeout: 5000 }));
-      await sleep(300); await shots(host, 'race-ghost');
-    } finally { relay.close(); }
+      await at('rival racing', host.waitForFunction(() => /rival racing/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      const leaked = await host.evaluate(() => __prism.gs());
+      if (leaked.some(g => g[0] || g[1])) throw new Error('rival paint leaked mid-round: ' + JSON.stringify(leaked));
+
+      // A third client wins the round. Only now may its paint arrive, and it arrives as a running replay.
+      spy = new WebSocket(`ws://localhost:${relay.port}/prism26-${code}`);
+      await at('spy connected', new Promise((res, rej) => { spy.onopen = res; spy.onerror = () => rej(new Error('spy socket failed')); }));
+      spy.send(JSON.stringify(['w', 'zzzz', 4.25, [[1, [10, 12, 16, 12]]]])); // 'zzzz' sorts last, so the host stays host
+      for (const p of [page, page2]) {
+        await at('round result', p.waitForFunction(() => /Round lost/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+        if (!/You 0 – 1 Rival/.test(await txt(p))) throw new Error('result screen has no score: ' + await txt(p));
+        const gs = await p.evaluate(() => __prism.gs());
+        if (!gs.some(g => g[0] == 1 && g[1])) throw new Error('winner replay missing: ' + JSON.stringify(gs));
+      }
+      if (await guest.$('[data-a=st]')) throw new Error('guest was offered the round button');
+      if (!/Waiting for the host/.test(await txt(guest))) throw new Error('guest was not told to wait');
+      await sleep(300); await shots(host, 'race-result');
+
+      await host.click('[data-a=st]'); // Next round
+      for (const p of [page, page2]) await at('round 2 card', p.waitForFunction(() => /Round 2/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      if (!/You 0 – 1 Rival/.test(await txt(host))) throw new Error('round 2 card lost the score: ' + await txt(host));
+      for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+
+      // A second win by the same rival decides the match: the card says so and offers a rematch, and the
+      // rematch starts a fresh round 1 with the score back to nil on both sides.
+      spy.send(JSON.stringify(['w', 'zzzz', 3.5, [[1, [10, 12, 16, 12]]]]));
+      for (const p of [page, page2]) await at('match result', p.waitForFunction(() => /take the match/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      if (!/You 0 – 2 Rival/.test(await txt(host))) throw new Error('match card lost the score: ' + await txt(host));
+      if (!/Rematch/.test(await txt(host))) throw new Error('host was not offered a rematch: ' + await txt(host));
+      await shots(host, 'race-match-end');
+      await host.click('[data-a=st]'); // Rematch
+      for (const p of [page, page2]) await at('rematch card', p.waitForFunction(() => /Round 1/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+      for (const p of [page, page2]) {
+        const tag = await p.$eval('.h span', s => s.textContent);
+        if (!/Round 1 · 0–0/.test(tag)) throw new Error('the rematch did not reset the score: ' + tag);
+      }
+    } finally { try { spy && spy.close(); } catch (e) { } relay.close(); }
   }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   await test('resize', async page => {
@@ -230,6 +271,60 @@ async function runBrowser(name) {
   await test('audio-gesture', async page => {
     await boot(page); await page.click('[data-a=sn]'); await page.click('[data-a=sn]'); await page.click('[data-a=go]');
   });
+
+  // The mute button has to look muted: both the title and the in-game HUD swap their glyph on click.
+  await test('mute-glyph', async page => {
+    await boot(page);
+    const glyph = () => page.$eval('[data-a=sn]', b => b.textContent);
+    const t0 = await glyph(); await page.click('[data-a=sn]');
+    const t1 = await glyph(); if (t0 == t1) throw new Error('title sound glyph unchanged: ' + t0);
+    await openLevel(page, 0);
+    const h0 = await glyph(); await shots(page, 'hud-muted'); // muted HUD: swapped glyph, dimmed button
+    await page.click('[data-a=sn]');
+    const h1 = await glyph(); if (h0 == h1) throw new Error('HUD sound glyph unchanged: ' + h0);
+    if (h1 != t0) throw new Error(`HUD unmuted glyph ${h1} != title unmuted glyph ${t0}`);
+    if (await page.evaluate(() => JSON.parse(localStorage.prism26_progress).snd) !== 1) throw new Error('mute flag not persisted');
+  });
+
+  // A shared room link has to (a) actually reach the clipboard and (b) join that room when opened.
+  await test('room-link', async (page, ctx) => {
+    const relay = await startRelay();
+    try {
+      await boot(page); await page.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`);
+      await page.click('[data-a=on]'); await page.click('[data-a=cr]');
+      await page.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+      const code = await page.$eval('#ui b', b => b.textContent);
+      await page.click('[data-a=cp]');
+      await page.waitForFunction(() => /Link copied/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      if (name == 'chromium') { // only chromium can grant clipboard-read; firefox is covered by the status line
+        const got = await page.evaluate(() => navigator.clipboard.readText());
+        if (got != URL + '#r=' + code) throw new Error(`clipboard holds "${got}", expected "${URL}#r=${code}"`);
+      }
+      // Opening the link must join that room. The link auto-joins before any test hook can run, so the
+      // relay URL is redirected to the in-process relay by stubbing WebSocket in an init script — the
+      // recorded URL is what the game built from the #r= hash, which is what the old regex got wrong.
+      const page2 = await ctx.newPage();
+      page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
+      await page2.addInitScript(port => {
+        const W = self.WebSocket;
+        self.WebSocket = function (u) { self.__tried = String(u); return new W(String(u).replace(/^wss:\/\/[^/]+\/prism\//, 'ws://localhost:' + port + '/')); };
+      }, relay.port);
+      await page2.goto(URL + '#r=' + code);
+      const tried = await page2.waitForFunction(() => self.__tried, null, { timeout: 5000 }).then(h => h.jsonValue());
+      if (!tried.endsWith('prism26-' + code)) throw new Error(`#r= link asked for "${tried}", expected room ${code}`);
+      for (const p of [page, page2]) await p.waitForFunction(() => /2 players/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+
+      // Leave has to actually leave: a round the host starts afterwards must not drag this page back in.
+      const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
+      await guest.click('[data-a=lv0]');
+      await guest.waitForSelector('[data-a=cr]', { timeout: 3000 });
+      await host.click('[data-a=st]');
+      await sleep(1500);
+      if (await guest.$('[data-a=p]')) throw new Error('a player who left was pulled into the round');
+      if (!await guest.$('[data-a=cr]')) throw new Error('a player who left did not stay out of the room');
+    } finally { relay.close(); }
+  }, name == 'chromium' ? { permissions: ['clipboard-read', 'clipboard-write'] } : {},
+    route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   await browser.close();
 }

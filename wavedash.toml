@@ -1,0 +1,12 @@
+# Wavedash publishing config (https://docs.wavedash.com/cli/configuration).
+# `wavedash init` writes this file interactively; it is checked in so the upload is reproducible.
+# Fill game_id with the ID from the Wavedash Developer Portal, then:
+#   wavedash auth login
+#   node build.js          # writes dist/wavedash/index.html
+#   wavedash build push -m "js13k 2026 entry"
+#   wavedash publish <BUILD_ID>
+game_id = "YOUR_GAME_ID_HERE"
+
+# The exact file that ships in prism.zip, alone in its own folder so nothing else is uploaded.
+upload_dir = "./dist/wavedash"
+entrypoint = "index.html"
