@@ -33,6 +33,8 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    The upload is `dist/wavedash/index.html` — byte-identical to the file inside the zip.
    **Published 2026-09-04**: build `mn7577vh48yny89ksk45b7xczh8dsh28`, release `rx73968cghm4kb05dbyaxbnp158ds0e4`,
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
+   **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
+   the 13,209-byte build that is `dist/prism.zip`.
 
 ## What changed in version 2.2 (DECISIONS.md §17)
 
