@@ -156,9 +156,12 @@ function grab(u, s, i) {
   const [cx, cy] = closest(u._x, u._y, p[i], p[i + 1], p[i + 2], p[i + 3]);
   // side: +1 if the unicorn is on the (sy,-sx) side of the segment
   const side = (u._x - cx) * sy - (u._y - cy) * sx < 0 ? -1 : 1;
-  let dd = u._vx * sx + u._vy * sy; // continue the current travel direction
-  if (!dd) dd = u._dir * sx;
-  if (!dd) dd = -sy * u._g;
+  // Direction along the polyline: continue the travel direction when the velocity is within ~53° of the
+  // tangent; otherwise face direction on a flat enough segment; otherwise up. Hand-drawn segments are
+  // short and jittered, so a vertical vine's stray sideways component (or the per-frame gravity increment
+  // of a unicorn walking into it) must never decide — it used to send the climb straight back down.
+  let dd = u._vx * sx + u._vy * sy;
+  if (abs(dd) < .6 * l * hypot(u._vx, u._vy)) dd = abs(sx) > .6 * l ? u._dir * sx : -sy * u._g;
   u._climb = { _s: s, _i: i, _t: hypot(cx - p[i], cy - p[i + 1]) / l, _side: side, _dir: dd < 0 ? -1 : 1, _spd: max(WALK, hypot(u._vx, u._vy)) };
 }
 
@@ -179,14 +182,10 @@ function climb(run) {
   const tx = sx / l * c._dir, ty = sy / l * c._dir, px = p[i] + sx * t, py = p[i + 1] + sy * t;
   const nx = sy / l * c._side, ny = -sx / l * c._side;
   let x = px + nx * R, y = py + ny * R;
-  if (blocked(run, x, y)) { // try the other side of the vine; else near an end keep going, mid-vine turn around
-    x = px - nx * R; y = py - ny * R;
-    if (blocked(run, x, y)) {
-      const end = c._dir < 0 ? i == 0 && t <= 0 : i + 4 >= p.length && t >= 1; // cannot creep past the end
-      if (!end && (i < 2 || i + 4 >= p.length)) { c._i = i; c._t = t; return; } // first/last segment: creep through the blockage
-      c._dir = -c._dir; u._dir = -u._dir; u._vx = -u._vx; u._vy = -u._vy; return;
-    }
-    c._side = -c._side;
+  if (blocked(run, x, y)) { // try the other side of the vine; if both sides are blocked, hold still and creep along
+    x = px - nx * R; y = py - ny * R;                 // (turning around here made hand-drawn vines that start on a
+    if (blocked(run, x, y)) { x = u._x; y = u._y; }   // floor oscillate forever: every short segment is "mid-vine")
+    else c._side = -c._side;
   }
   c._i = i; c._t = t;
   u._x = x; u._y = y; u._vx = tx * c._spd; u._vy = ty * c._spd;

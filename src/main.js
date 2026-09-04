@@ -98,7 +98,7 @@ cv.onpointerdown = e => {
 cv.onpointermove = e => {
   if (!cur) return;
   let [x, y] = wp(e); const p = cur._p, px = p[p.length - 2], py = p[p.length - 1], d = hypot(x - px, y - py);
-  if (d < .15 || (col != 5 && inSolid(L, (x + px) / 2, (y + py) / 2))) return;
+  if (d < .15 || (col != 5 && (inSolid(L, x, y) || inSolid(L, (x + px) / 2, (y + py) / 2)))) return;
   const avail = inkLeft(col) - cur._len;
   if (d >= avail) { x = px + (x - px) * avail / d; y = py + (y - py) * avail / d; }
   p.push(x, y); cur._len += min(d, avail);

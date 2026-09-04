@@ -49,5 +49,5 @@ export const LEVELS = [
   'N Loft|H Climb first, then chain across|S 2 14 1|G 29 5|R 0 14 32 4|R 10 6 2 8|R 20 6 12 12|I G10 Y11 O4',
   'N Trampoline|H Dash, feather, then bounce off the rock|S 2 10 1|G 29 9|R 0 10 10 8|W 10 16 14 2|R 19 15 3 3|R 24 10 8 8|I R4 B4 O6',
   'N Tightrope|H A vine is a road too|S 2 12 1|G 29 11|R 0 12 6 6|R 6 16 20 2|K 6 15.5 20 .5|R 26 12 6 6|R 0 2 32 2|I G36 O4',
-  'N Aurora|H One of everything|S 2 8 1|G 30 3|R 0 8 10 10|W 10 16 5 2|R 15 14 6 4|R 21 9 4 5|R 24 2 1 7|R 25 14 7 4|R 0 0 32 2|T 28 2 1 2|I R4 O6 Y6 G8 B4 I5 V4',
+  'N Aurora|H One of everything|S 2 8 1|G 30 3|R 0 8 10 10|W 10 16 5 2|R 15 14 6 4|R 21 9 4 5|R 24 2 1 7|R 25 14 7 4|R 0 0 32 2|T 28 2 1 6|I R4 O6 Y6 G8 B4 I5 V4',
 ];
