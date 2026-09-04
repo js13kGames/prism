@@ -13,6 +13,7 @@ let dpr, sc, ox, oy;      // canvas scale: world unit → css px, and letterbox 
 let scr = 0;              // 0 title, 1 select, 2 game, 3 lobby
 let li = 0, L, strokes = [], run = null, col = 0, cur = null, played = 0, failT = 0, daily = 0;
 let T = 0, last = 0, acc = 0, hintOn = 1;
+const A0 = Math.PI * 1.018, AS = Math.PI * .964; // title rainbow: the sweep whose ends meet the bottom edge
 let prog = { done: [], stars: [], snd: 1 };
 try { prog = { ...prog, ...JSON.parse(localStorage.prism26_progress || '{}') }; } catch (e) { }
 setSnd(prog.snd);
@@ -55,7 +56,9 @@ function play() {
 function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
-const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); show(titleUI(snd)); };
+const count = a => a.filter(Boolean).length;
+const title = () => show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length));
+const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); title(); };
 const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
 const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
 
@@ -63,7 +66,7 @@ const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or ente
 const act = {
   go: goSelect, bk: () => scr == 2 && !daily ? goSelect() : goTitle(), on: goLobby,
   dy: () => loadLevel(LEVELS.length, daySeed()),
-  sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : show(titleUI(snd)); },
+  sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : title(); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
   c: v => { col = +v; hud(); playNote(col); },
   u: () => { if (!run && strokes.length) { strokes.pop(); hud(); } },
@@ -153,12 +156,24 @@ function render(dt) {
     drawStart(g, L._sx, L._sy, L._sd); drawGem(g, L._gx, L._gy, T);
     if (run) { if (run._state != 2) drawUnicorn(g, run._u, T); }
     else if (!over) drawUnicorn(g, { _x: L._sx, _y: L._sy - R, _dir: L._sd, _g: 1, _gr: 1 }, 0);
-  } else { // title / select backdrop: sky, rainbow arc, idle unicorn
-    const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#6ea8ff'); sky.addColorStop(1, '#ffd6ea');
-    g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    g.lineWidth = .6;
-    for (let c = 0; c < 7; c++) { g.strokeStyle = COLS[c]; g.beginPath(); g.arc(16, 22, 15 - c * .6, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
-    g.save(); g.translate(16 + Math.sin(T) * 2, 5.3); g.scale(2.2, 2.2); drawUnicorn(g, { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 1 }, T); g.restore();
+  } else {
+    // Title / select / lobby backdrop, drawn in css pixels rather than world units: the world box letterboxes
+    // to a thin strip in portrait, which left the art stranded between dead bars. Anchored below the bottom
+    // edge with a height-proportional radius, the arch frames the menu on every aspect and its apex stays
+    // above the title text. The loop is the game in miniature: paint a rainbow, then walk it.
+    const cw = innerWidth, ch = innerHeight, cx = cw / 2, cy = ch * 1.05, rr = ch * .86, lw = ch * .022;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const sky = g.createLinearGradient(0, 0, 0, ch); sky.addColorStop(0, '#6ea8ff'); sky.addColorStop(1, '#ffd6ea');
+    g.fillStyle = sky; g.fillRect(0, 0, cw, ch);
+    const k = T % 10, pn = min(1, k / 3.5), wk = min(1, max(0, (k - 4) / 5)), f = wk ? .25 + .5 * wk : min(.25, pn);
+    g.globalAlpha = min(1, k * 2, 10 - k); // fade out and back in so the restart is not a jump cut
+    g.lineWidth = lw; g.lineCap = 'round';
+    for (let c = 0; c < 7; c++) { g.strokeStyle = COLS[c]; g.beginPath(); g.arc(cx, cy, rr - c * lw, A0, A0 + AS * pn); g.stroke(); }
+    g.lineCap = 'butt';
+    const a = A0 + AS * f, us = ch * .055, r = rr + lw / 2 + us * .52; // stand on the outer band, upright to the curve
+    g.save(); g.translate(cx + r * Math.cos(a), cy + r * Math.sin(a)); g.rotate(a + Math.PI / 2); g.scale(us, us);
+    drawUnicorn(g, { _x: 0, _y: 0, _dir: 1, _g: 1, _gr: 1 }, f < .25 || (wk && wk < 1) ? T : 0); g.restore();
+    g.globalAlpha = 1;
   }
   drawParts(g, dt);
 }

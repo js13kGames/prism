@@ -3,7 +3,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#241d4a;font-family:sy
 #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
 #ui>*{pointer-events:auto}
 .t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#1a153399}
-h1{font-size:min(18vw,90px);margin:0;letter-spacing:.12em;background:linear-gradient(90deg,#ff5d6c,#ffa64d,#ffe14d,#5fd68a,#5db8ff,#7b6cff,#d977ff);-webkit-background-clip:text;background-clip:text;color:#0000}
+h1{font-size:min(18vw,13vh,90px);margin:0;letter-spacing:.12em;background:linear-gradient(90deg,#ff5d6c,#ffa64d,#ffe14d,#5fd68a,#5db8ff,#7b6cff,#d977ff);-webkit-background-clip:text;background-clip:text;color:#0000;filter:drop-shadow(0 3px 7px #1a1533cc)}
 h2{margin:0 0 8px;font-size:32px}
 p{margin:4px 12px;opacity:.85}
 button{font:inherit;border:0;border-radius:12px;padding:0 16px;margin:4px;background:#ffffff2e;color:#fff;min-width:44px;min-height:46px;cursor:pointer;font-size:17px}
@@ -22,3 +22,7 @@ button:active{background:#fff5}
 input{font:inherit;font-size:22px;width:5em;text-align:center;text-transform:uppercase;border:0;border-radius:10px;padding:8px;margin:4px}
 .g{opacity:.5}
 .q{background:#1a153355;text-shadow:0 2px 8px #1a1533}
+.v{background:radial-gradient(75% 65% at 50% 45%,#1a153300,#1a1533b8)}
+.v p{text-shadow:0 2px 8px #1a1533}
+.w{font-size:20px;min-height:56px;padding:0 34px;box-shadow:0 5px 0 #d9558a}
+.w:active{background:#f76ca4;transform:translateY(3px);box-shadow:0 2px 0 #d9558a}

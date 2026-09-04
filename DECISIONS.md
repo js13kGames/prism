@@ -426,3 +426,28 @@ Size after these fixes (`-O1`): 11,903 bytes — 1,409 under the limit.
   ever affected. `online-race` now leaves the room and opens level 1 to prove it.
 
 Size after the race rework (`-O2`): 12,134 bytes — 1,178 under the limit.
+
+## 14 Title screen (2026-09-04)
+
+- The old title was the game's world box (32×18) letterboxed into the viewport with a flat
+  `#1a153399` wash over it: the sky and rainbow read as grey, and in portrait the art was a
+  thin strip between dead purple bars. The backdrop for the title, level select and lobby is
+  now drawn in **css pixels** instead of world units, so it fills any viewport, and the wash
+  is a vignette that is fully transparent in the middle (`.v`). The rainbow title is
+  gradient-clipped text, which `text-shadow` paints straight through, so it gets a
+  `drop-shadow` filter instead — that follows the glyph alpha.
+- The backdrop is now the game in miniature on a 10 s loop: a rainbow **paints itself in**
+  over 3.5 s (round caps, so the head reads as a brush), the unicorn **walks it** from 4 s to
+  9 s, then the whole thing fades out and starts again. Draw, then play — the loop states the
+  premise before the player reads a word of it.
+- Geometry is anchored below the bottom edge (`cy = ch * 1.05`, `rr = ch * .86`) with the
+  sweep chosen so the arch's feet meet the bottom corners at any aspect. That keeps the apex
+  above the title block instead of behind it — the first attempt had the unicorn walking
+  through the letters — and the menu sits inside the arch. The rider is `ch * .055`: at
+  `.075` its horn was clipped by the top edge on a 390 px-tall landscape phone, and `h1` now
+  takes a `13vh` term so the text block does not fill a short screen top to bottom.
+- The title also carries progress (`12 / 30 levels · ★ 5`, or a one-line pitch of what is in
+  the game before anything is finished), and Play is a chunky primary button that presses in
+  (`.w`) rather than another flat pill.
+
+Size after the title work (`-O2`): 12,474 bytes — 838 under the limit.

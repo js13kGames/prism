@@ -4,8 +4,11 @@ import { COLS } from './sim.js';
 export const GLYPH = '↑⇒✶⋮❋⇢⟳';
 const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Indigo phase,Violet flip'.split(',');
 
-export const titleUI = snd => `<div class=t><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
-<button class=b data-a=go>Play</button><div><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div></div>`;
+// Title. The backdrop behind it is animated (main.js), so this screen uses the .v vignette rather than the
+// flat wash the menus use — otherwise the sky and the rainbow read as grey.
+export const titleUI = (snd, done, stars, n) => `<div class="t v"><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
+<button class="b w" data-a=go>Play</button><div><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div>
+<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : '30 levels · daily seed · online races'}</p></div>`;
 
 // Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}; daily = label string or ''.
 export function selectUI(prog, daily, n) {
