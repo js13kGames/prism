@@ -23,7 +23,7 @@ input{font:inherit;font-size:22px;width:5em;text-align:center;text-transform:upp
 .g{opacity:.5}
 .q{background:#1a153355}
 .v{background:radial-gradient(75% 65% at 50% 45%,#1a153300,#1a1533b8)}
-.q,.v{text-shadow:0 2px 8px #1a1533}
+.q,.v p{text-shadow:0 2px 8px #1a1533}
 .w,.n{width:264px;max-width:84vw}
 .w{font-size:20px;min-height:56px;margin:14px 0 2px;box-shadow:0 5px 0 #d9558a}
 .n{display:flex;gap:8px}

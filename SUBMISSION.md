@@ -2,9 +2,9 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **13,200 bytes** (limit 13,312; 112 bytes of headroom).
+- `dist/prism.zip` — **13,209 bytes** (limit 13,312; 103 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (18,589 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,585 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -32,7 +32,7 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    API key, then `node build.js -O2`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — byte-identical to the file inside the zip.
    **Published 2026-09-04**: build `mn7577vh48yny89ksk45b7xczh8dsh28`, release `rx73968cghm4kb05dbyaxbnp158ds0e4`,
-   https://wavedash.com/games/prism (the same 13,200-byte build as `dist/prism.zip`).
+   https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
 
 ## What changed in version 2.2 (DECISIONS.md §17)
 
@@ -110,13 +110,13 @@ sim.js        14490   5999   3042
 levels.js      5237   4638   1905
 gen.js         3946   1696    921
 audio.js       6873   2836   1577
-render.js      7390   4663   1700
+render.js      7507   4671   1702
 net.js         2343   1174    714
 ui.js          4261   2492   1168
-main.js       17047   7699   4050
-style.css      2370   2338    958
+main.js       17084   7703   4053
+style.css      2372   2340    959
 
-bundle raw 60555, minified 30848, roadrolled 16024, html 18589, zip 13200 (zopfli)
+bundle raw 60709, minified 30861, roadrolled 16018, html 18585, zip 13209 (zopfli)
 ```
 
 ## What was cut or changed
@@ -132,7 +132,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
   (documented, not changed).
 - Paint contacts resolve before rect contacts (so a pad drawn on a floor line works).
 - Run state is numeric (0/1/2) instead of strings.
-- The Daily "done" flag is a ✓ on the title's Daily button (no streaks; the Wavedash build posts the time to a `daily-<seed>` leaderboard).
+- The Daily "done" flag is a ✓ on the title's Daily button (no streaks; the Wavedash build posts the time to the `daily` leaderboard).
 
 ## Submission form description (≤ 500 chars)
 
@@ -152,7 +152,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 | **Desktop** | ✔ Chrome + Firefox, keyboard shortcuts (1–7, Z, C, Space, Esc), mouse drawing, resize-safe. |
 | **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overflow:hidden`), palette buttons 46×52 css px (≥ 44), 30-level grid fits a 390 px screen, portrait (390×844) and landscape (844×390) tested with real touch input. |
 | **Online** | ✔ Best-of-three race over the js13kGames relay (`wss://relay.js13kgames.com/prism/{room}`) on a plain WebSocket (no import, reconnect on unexpected close), rooms `prism26-XXXX`, shareable `#r=CODE` links, no paint shared while a round is live (the only in-round message is "started running"), the winner's run replaying from the deterministic sim on the result card, round cards and a running score, degrades to a status line offline. Verified against the live relay with two real browser pages. |
-| **Wavedash** | ✔ Ready to upload: `wavedash.toml` is checked in and `build.js` writes `dist/wavedash/index.html` (the same file that ships in the zip) as the `upload_dir`. The platform injects a global `Wavedash`, so the SDK costs no bytes and no external resource: `main.js` calls `init()`/`readyForEvents()` only when that global exists, and the same guarded path posts nine achievements (created on the portal by `tools/wavedash-achievements.mjs`) and three kinds of leaderboard (`levels`, `stars`, `daily-<seed>` times). Published with `wavedash build push` / `wavedash publish` (deadline 20 September; no new features or fixes after it). Nothing depends on the host origin except `localStorage` keys prefixed `prism26_`. |
+| **Wavedash** | ✔ Ready to upload: `wavedash.toml` is checked in and `build.js` writes `dist/wavedash/index.html` (the same file that ships in the zip) as the `upload_dir`. The platform injects a global `Wavedash`, so the SDK costs no bytes and no external resource: `main.js` calls `init()`/`readyForEvents()` only when that global exists, and the same guarded path posts nine achievements (created on the portal by `tools/wavedash-achievements.mjs`) and three leaderboards (`levels`, `stars`, `daily` best time; SDK-created boards start hidden, `tools/wavedash-leaderboards.mjs` names them and makes them visible). Published with `wavedash build push` / `wavedash publish` (deadline 20 September; no new features or fixes after it). Nothing depends on the host origin except `localStorage` keys prefixed `prism26_`. |
 
 ## Known limitations
 
@@ -165,7 +165,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 
 ## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (13,200 bytes), one full run after the final build. The live
+Suite B against the unzipped release zip (13,209 bytes), one full run after the final build. The live
 js13kGames relay was exercised separately with `tools/relaytest.mjs`; the Wavedash SDK calls are exercised
 against a recording mock (`platform-achievements`) because the real sandbox needs an interactive login.
 

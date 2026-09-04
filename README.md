@@ -128,9 +128,12 @@ global (every call is guarded, so nothing happens elsewhere):
 | Photo Finish | winning a round of an online race |
 
 Leaderboards: `levels` and `stars` (counts, descending) after every level win, and
-`daily-<seed>` (the unicorn's time in milliseconds, ascending) for each daily. The
-achievements are created on the portal by `node tools/wavedash-achievements.mjs` (needs
-`WAVEDASH_TOKEN`); leaderboards are created by the game on first use.
+`daily` (the unicorn's best daily time in milliseconds, ascending). The achievements are
+created on the portal by `node tools/wavedash-achievements.mjs` (needs `WAVEDASH_TOKEN`).
+Leaderboards are created by the game on first use, **hidden**: run
+`node tools/wavedash-leaderboards.mjs` once after each board's first score to name it and
+make it visible on the game page (`levels` and `stars` are done; `daily` needs one daily clear
+on Wavedash first).
 
 ## Tests
 

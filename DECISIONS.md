@@ -597,3 +597,19 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   now clears the level; the online-race test plays a level first and asserts that neither
   page shows a HUD before the host presses Start (it failed on the old build with the exact
   symptom: the host never reached "2 players").
+
+- **Four more from playing the published build.** (1) *No leaderboard on the game page*:
+  SDK-created leaderboards exist but start **hidden**; the HTTP API's PATCH
+  `/api/games/{id}/leaderboards/by-name/{name}` with `visible: true` (and a display name)
+  is the only way to show them, so `tools/wavedash-leaderboards.mjs` does that, and the
+  per-day `daily-<seed>` boards — each of which would have needed the same treatment — became
+  one `daily` best-time board. (2) *The title looked worse*: the byte cut that merged
+  `.v p` into `.q,.v` put a text-shadow on the whole overlay, and the transparent
+  gradient-clipped h1 showed its own shadow through the letters; back to `.v p`.
+  (3) *A host alone could press Start*: the button and `raceStart` now both require a rival.
+  (4) *"The ghost shows a stroke I cleared"*: `drawStrokes` sets globalAlpha per stroke, which
+  overwrote the .35 the caller had set, so the winner's replay was drawn at full strength and
+  read as the viewer's own paint (a yellow bridge the winner had used and crumbled, alive again
+  in the replay). It takes an alpha parameter now, the ghost unicorn is faded too, and the win
+  message carries the exact points instead of one-decimal roundings, so the replay is the run
+  that won and not a near miss of it.

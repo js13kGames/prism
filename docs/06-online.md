@@ -74,7 +74,7 @@ chosen on connect.
 ["s", id, seed, round]         host announces the seed (host = lowest id among known ids; recomputed when membership changes)
 ["p", id]                      pressed play — presence only, no geometry
 ["w", id, t, [[c, [pts…]]…]]   reached the gem at sim time t, with the paint that did it
-                               (points rounded to 1 decimal); the first "w" per round wins
+                               (exact points, so the replay is that run); the first "w" per round wins
 ```
 
 Ghost sims: because the sim is deterministic, the winner's strokes are enough to *run

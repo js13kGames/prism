@@ -204,6 +204,7 @@ async function runBrowser(name) {
       await page.click('[data-a=on]'); await page.click('[data-a=cr]');
       await at('room created', page.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
       const code = await page.$eval('#ui b', b => b.textContent);
+      if (await page.$('[data-a=st]')) throw new Error('a host alone in the room can press Start');
       await page2.click('[data-a=on]'); await page2.fill('#j', code); await page2.click('[data-a=jn]');
       for (const p of [page, page2]) await at('2 players', p.waitForFunction(() => /2 players/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
       await shots(page, 'lobby-2players');

@@ -153,9 +153,9 @@ function onWin() {
     ach('gem'); if (d > 19) ach('half'); if (d > 39) ach('all'); if (s > 9) ach('star10'); if (s > 39) ach('star40'); if (strokes.length == 1) ach('solo');
     lb('levels', d); lb('stars', s);
   }
-  else if (daily && scr == 2) { try { localStorage.prism26_daily = daily; } catch (e) { } ach('daily'); lb('daily-' + daily, run._t * 1e3 | 0, 1); }
+  else if (daily && scr == 2) { try { localStorage.prism26_daily = daily; } catch (e) { } ach('daily'); lb('daily', run._t * 1e3 | 0, 1); }
   setMusic(1);
-  if (scr == 3) { send(['w', +run._t.toFixed(3), strokes.map(k => [k._c, k._p.map(v => +v.toFixed(1))])]); raceWin(myId(), run._t); return; }
+  if (scr == 3) { send(['w', +run._t.toFixed(3), strokes.map(k => [k._c, k._p])]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= LEVELS.length - 1 || daily, daily ? 'Daily done!' : ''));
 }
 
@@ -164,7 +164,7 @@ function render(dt) {
   g.setTransform(sc * dpr, 0, 0, sc * dpr, ox * dpr, oy * dpr);
   if (scr >= 2 && L) {
     drawWorld(g, L, run, T);
-    if (scr == 3) for (const gh of ghosts) if (gh._run) { g.globalAlpha = .35; drawStrokes(g, gh._run._s); if (!gh._run._state) drawUnicorn(g, gh._run._u, T); g.globalAlpha = 1; }
+    if (scr == 3) for (const gh of ghosts) if (gh._run) { drawStrokes(g, gh._run._s, 0, .35); if (!gh._run._state) { g.globalAlpha = .35; drawUnicorn(g, gh._run._u, T); g.globalAlpha = 1; } }
     drawStrokes(g, run ? run._s : strokes, cur);
     drawStart(g, L._sx, L._sy, L._sd); drawGem(g, L._gx, L._gy, T);
     if (run) { if (run._state != 2) drawUnicorn(g, run._u, T); }
@@ -197,7 +197,7 @@ function render(dt) {
 // winner's strokes travel with their 'w', and everyone else watches that run replay on the result screen.
 let room = '', ghosts = [], round = 0, over = 0, score = {};
 const isHost = () => [myId(), ...ghosts.map(g => g._id)].sort()[0] == myId();
-const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost()));
+const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost() && ghosts.length)); // Start needs a rival
 const mine = () => score[myId()] || 0;
 const theirs = () => ghosts.reduce((s, g) => s + (score[g._id] || 0), 0);
 const scoreLine = () => `You ${mine()} – ${theirs()} Rival`;
@@ -234,7 +234,7 @@ function copyLink() {
 function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = 0; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); }
 // Host drives the rounds: Start / Next round / Rematch all land here. Round 1 means a fresh match, so the
 // scores reset on both sides from the round number alone (a rejoining player picks up the same rule).
-function raceStart() { if (!isHost()) return; const s = Math.random() * 1e9 | 0, r = over && over._d ? 1 : round + 1; send(['s', s, r]); startRound(s, r); }
+function raceStart() { if (!isHost() || !ghosts.length) return; const s = Math.random() * 1e9 | 0, r = over && over._d ? 1 : round + 1; send(['s', s, r]); startRound(s, r); }
 function startRound(s, r) {
   round = r; if (r == 1) score = {};
   ghosts.forEach(gh => { gh._s = []; gh._run = null; gh._go = 0; });

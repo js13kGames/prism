@@ -49,10 +49,11 @@ export function drawWorld(g, L, run, t) {
 }
 
 // Strokes: colour order 0→6. Faded when unsupported (draw phase preview or falling) or a spent violet.
-export function drawStrokes(g, strokes, cur) {
+// a = overall alpha (a rival's replay is drawn at .35 so it can never be mistaken for your own paint).
+export function drawStrokes(g, strokes, cur, a = 1) {
   const all = cur ? [...strokes, cur] : strokes;
   for (let c = 0; c < 7; c++) for (const s of all) if (s._c == c && !s._dead && s._p.length > 3) {
-    g.globalAlpha = s._armed == 0 || s._sup == 0 ? .45 : 1;
+    g.globalAlpha = a * (s._armed == 0 || s._sup == 0 ? .45 : 1);
     g.lineCap = g.lineJoin = 'round';
     g.setLineDash(s._touched && c == 2 ? [.3, .2] : []);
     g.beginPath(); g.moveTo(s._p[0], s._p[1]);
