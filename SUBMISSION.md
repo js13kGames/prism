@@ -2,9 +2,9 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **12,932 bytes** (limit 13,312; 380 bytes of headroom).
+- `dist/prism.zip` — **12,968 bytes** (limit 13,312; 344 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (18,252 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,392 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -83,11 +83,11 @@ gen.js         3946   1696    921
 audio.js       4649   2223   1295
 render.js      7645   4857   1745
 net.js         2343   1174    714
-ui.js          4469   2644   1262
+ui.js          4486   2662   1266
 main.js       15451   7256   3849
-style.css      2368   2339    950
+style.css      2538   2505   1009
 
-bundle raw 56966, minified 30234, roadrolled 15686, html 18252, zip 12932 (zopfli)
+bundle raw 56983, minified 30252, roadrolled 15660, html 18392, zip 12968 (zopfli)
 ```
 
 ## What was cut or changed
@@ -135,7 +135,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 
 ## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (12,932 bytes), one full run after the final build (the
+Suite B against the unzipped release zip (12,968 bytes), one full run after the final build (the
 two runs before it, on the build without the ghost-lifetime fix, were also 28/28 in both browsers). The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
 
 | browser | test | result |

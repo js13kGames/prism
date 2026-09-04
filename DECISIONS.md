@@ -487,7 +487,14 @@ Size after the title work (`-O2`): 12,474 bytes — 838 under the limit.
   16 s so the two ~10 s levels have headroom on a loaded machine, not to paper over slow
   levels.
 
-Size with 40 levels and the platform-aware copy (`-O2`): 12,932 bytes — 380 under the limit.
+- **The title menu was a lumpy stack**: the primary button was narrower than the row of four
+  under it, so the secondary row read as the heavier element, and Continue is wide enough
+  that it would have reflowed the block the moment a save existed. The primary is now a fixed
+  264 px (identical for Play and Continue), the three secondary buttons share exactly that
+  width beneath it, and the sound toggle — a toggle, not a destination — moved to the
+  top-right corner, where the in-game HUD already puts it.
+
+Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968 bytes — 344 under the limit.
 
 ## 16 Copy link inside a platform frame; why not the Wavedash multiplayer SDK (2026-09-04)
 

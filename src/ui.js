@@ -13,8 +13,9 @@ const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Ind
 // flat wash the menus use — otherwise the sky and the rainbow read as grey.
 export const titleUI = (snd, done, stars, n) => `<div class="t v"><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
 <button class="b w" data-a=co>${done ? 'Continue' : 'Play'}</button>
-<div><button data-a=go>Levels</button><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div>
-<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p></div>`;
+<div class=n><button data-a=go>Levels</button><button data-a=on>Online</button><button data-a=dy>Daily</button></div>
+<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p>
+<button class=z data-a=sn>${snd ? '🔊' : '🔇'}</button></div>`;
 
 // Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}; daily = label string or ''.
 export function selectUI(prog, daily, n) {
