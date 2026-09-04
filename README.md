@@ -56,6 +56,15 @@ Works in portrait and landscape; the world is letterboxed, the palette stays ≥
 
 Levels 27 and 30 add a **gate** that opens once all seven colours have been touched in one run.
 
+### The rainbow is a scale
+
+The seven colours are the seven notes of C major (red C, orange D, yellow E, green F,
+blue G, indigo A, violet B). Picking a colour or finishing a stroke plays its note, and
+when the unicorn touches a stroke that colour sounds again, so the run plays your painting
+back. Underneath, a small generative backing (I–V–vi–IV on oscillators, 120 BPM) stays
+calm while you draw and adds off-beats while the unicorn runs. Everything is synthesised;
+there is no audio data in the zip.
+
 ## Build
 
 ```bash
@@ -113,7 +122,7 @@ docs/           the design spec         DECISIONS.md   every judgment call, with
 ## Credits
 
 - Design, code, levels: Arjun Vinod, with Claude (Anthropic) as the build agent.
-- Sound synthesis: [ZzFX](https://github.com/KilledByAPixel/ZzFX) micro by Frank Force (MIT).
+- Sound effects: [ZzFX](https://github.com/KilledByAPixel/ZzFX) micro by Frank Force (MIT). Music: Web Audio oscillators, generated at run time.
 - Packing: [Roadroller](https://github.com/lifthrasiir/roadroller) by Kang Seonghoon; terser; zopfli.
 - Everything drawn is procedural canvas; the font is the system UI font.
 

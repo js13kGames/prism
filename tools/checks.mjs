@@ -18,7 +18,7 @@ const strip = s => s.replace(/^import [^\n]*\n/gm, '').replace(/^export (default
 const bundle = '(()=>{' + ORDER.map(m => strip(fs.readFileSync(`src/${m}.js`, 'utf8'))).join('\n') + '})()';
 const min = (await minify(bundle, { compress: { passes: 3, unsafe: true, unsafe_math: true, pure_getters: true, toplevel: true, drop_console: true }, mangle: { toplevel: true, properties: { regex: /^_/, reserved: ['__prism'] } }, format: { ascii_only: false, comments: false } })).code;
 console.log('minified JS bytes:', min.length);
-console.log('http(s) occurrences in minified JS:', (min.match(/https?:\/\/[^"'`\s]*/g) || []));
+console.log('URL occurrences in minified JS:', (min.match(/(https?|wss?):\/\/[^"'`\s]*/g) || []));
 console.log('localStorage.clear present:', /localStorage\.clear/.test(min));
 console.log('console. present:', /console\./.test(min));
 console.log('localStorage keys used:', [...new Set(min.match(/prism26_\w+/g))]);

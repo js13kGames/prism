@@ -336,3 +336,18 @@ Size after v2 (`-O1`): 11,325 bytes — 1,987 under the limit.
   message, first to two round wins (or three rounds) ends the match with a line in
   the lobby, scores reset for a rematch. The lobby's initial status no longer says
   "Connecting…" before a room exists.
+
+## 11 Music (2026-09-04)
+
+- Added generative music instead of stored song data: the seven colours map onto the
+  seven degrees of C major, so drawing plays notes in key and the unicorn "plays the
+  painting" as it touches strokes. A 120 BPM I–V–vi–IV backing runs on plain Web Audio
+  oscillators (triangle bass on the bar, sine chord-tone arpeggio per beat, off-beat
+  eighths while a run is in progress; win = a run up the scale). ZzFX stays for the
+  one-shot effects. Cost ≈ 600 bytes minified. Gains are small (bass .16, arp .05,
+  notes .12) so nothing clips against the .3 ZzFX effects.
+- The scheduler is a 200 ms setInterval that schedules ~0.35 s ahead; it is a no-op
+  until the AudioContext exists (first gesture) and while muted, so nothing autoplays
+  and no console warning is produced.
+- The stroke "tick" effect (sound 0) is replaced by the colour's note; the table entry
+  is kept because removing it would renumber the other sounds for ~20 bytes.

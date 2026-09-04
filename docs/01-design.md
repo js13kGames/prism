@@ -98,6 +98,15 @@ Keep UI text tiny; the ink bars and colour swatches do the talking.
 - Colour blindness: each palette button shows the colour's icon glyph (↑ ⇒ ✶ ⋮ ❋ ⇢ ⟳)
   in addition to the colour, and the level hint names colours by name.
 
+## Music
+
+The rainbow is a C-major scale: colour index = scale degree (red C … violet B).
+Selecting a colour or finishing a stroke plays its note (octave +1); when the unicorn
+touches a stroke, that colour's note plays (octave 0), so a run plays the painting
+back. A scheduler (`audio.js`) plays a I–V–vi–IV backing at 120 BPM on oscillators:
+bass on the bar, a chord-tone arpeggio on each beat, plus off-beat eighths while the
+unicorn is running. Winning plays a run up the scale. Mute silences all of it.
+
 ## Hint system
 
 Each level has a ≤ 40-char hint string. The hint for a colour's intro level explains

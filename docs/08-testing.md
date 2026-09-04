@@ -33,6 +33,12 @@ colours; every hint ≤ 40 chars.
 
 ## B. `test/browser.test.js` (Playwright, chromium + firefox)
 
+Flags: `chromium|firefox` picks a browser, `--quick` skips the all-levels run,
+`--only <test>` runs one test, `--repeat N` repeats the selection (for flakes).
+The online-race test draws its ghost stroke in the sky above the start platform
+(x < 3, y = 2) because generated levels never build there; a fixed stroke anywhere
+else can be clipped by a wall on some seeds.
+
 Setup: `npx playwright install chromium firefox` (with `--with-deps` if the OS needs
 it; if system deps cannot be installed for firefox, try `npx playwright install-deps`;
 if firefox still cannot launch, document it in SUBMISSION.md as an untested browser

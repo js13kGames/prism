@@ -160,6 +160,10 @@ Wrap in try/catch (private mode). Never clear other keys.
 ZzFX mini (the ~1 KB version; it is public domain / MIT — credit in README). Sounds:
 stroke tick (pitch by colour), play, bounce, crumble, fling, flip, fail, win, click.
 AudioContext created on the first user gesture. Mute toggle persisted.
+Music (same file): `note(degree, octave)` maps colour indices onto C major; `tone()`
+is an oscillator + gain envelope; `tick()` (setInterval 200 ms) schedules beats
+~0.35 s ahead of `ac.currentTime`; `setMusic(1|2)` picks calm/lively; `playNote(c, o)`
+and `fanfare()` are called from main.js.
 
 ## Performance
 

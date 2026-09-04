@@ -1,4 +1,6 @@
-// Sound: ZzFX micro (Frank Force, MIT — https://github.com/KilledByAPixel/ZzFX) + a tiny sound table.
+// Sound: ZzFX micro (Frank Force, MIT — https://github.com/KilledByAPixel/ZzFX) + a tiny sound table, and
+// generative music: the rainbow is a C-major scale (red C, orange D, … violet B). A small scheduler plays a
+// I–V–vi–IV backing on oscillators; drawing a colour, and the unicorn touching it, play that colour's note.
 // The AudioContext is created on the first user gesture (initAudio). `snd` is the persisted mute flag.
 export let snd = 1;
 export const setSnd = v => snd = v;
@@ -37,3 +39,33 @@ export function sfx(id, col) {
   if (!id) p[2] = 330 * 2 ** (col / 7); // stroke tick pitched by colour
   try { zzfx(...p); } catch (e) { }
 }
+
+// ---- Music -------------------------------------------------------------------------------------------
+const SC = [0, 2, 4, 5, 7, 9, 11], PROG = [0, 4, 5, 3]; // major scale semitones; chord roots I V vi IV
+export const note = (d, o = 0) => 261.63 * 2 ** (o + (d / 7 | 0) + SC[d % 7] / 12); // degree d (0 = C) at octave o
+let nextT = 0, beat = 0, mode = 1; // mode: 1 calm (draw/menus), 2 lively (play)
+function tone(f, t, d, type, g) {
+  const o = ac.createOscillator(), v = ac.createGain();
+  o.type = type; o.frequency.value = f; o.connect(v); v.connect(ac.destination);
+  v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + .02); v.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.start(t); o.stop(t + d);
+}
+export const setMusic = m => mode = m;
+// A colour's note: c = colour index (scale degree), o = octave offset.
+export function playNote(c, o = 1) { if (snd && ac) tone(note(c, o), ac.currentTime, .5, 'sine', .12); }
+// Win: a quick run up the scale.
+export function fanfare() { if (snd && ac) for (let i = 0; i < 8; i++) tone(note(i, 1), ac.currentTime + i * .07, .45, 'sine', .1); }
+// Scheduler: 120 BPM, schedules ~0.35 s ahead. Bass on the bar, a chord-tone arpeggio on each beat, off-beats when lively.
+function tick() {
+  if (!snd || !ac) return;
+  const now = ac.currentTime;
+  if (nextT < now) nextT = now + .05;
+  while (nextT < now + .35) {
+    const ch = PROG[beat >> 3 & 3], b = beat & 3;
+    if (!b) tone(note(ch, -2), nextT, 1.9, 'triangle', .16);
+    tone(note(ch + [0, 2, 4, 2][b], 0), nextT, .45, 'sine', .05);
+    if (mode > 1) tone(note(ch + [4, 2, 0, 4][b], 1), nextT + .25, .25, 'sine', .04);
+    beat++; nextT += .5;
+  }
+}
+setInterval(tick, 200);

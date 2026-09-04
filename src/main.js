@@ -3,7 +3,7 @@ import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W,
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
 import { titleUI, selectUI, hudUI, winUI, lobbyUI } from './ui.js';
-import { sfx, initAudio, snd, setSnd } from './audio.js';
+import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic } from './audio.js';
 import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
 
@@ -49,9 +49,9 @@ function loadLevel(i, seed) {
 
 function play() {
   if (run) return;
-  run = createRun(L, strokes); played = 1; hud(); sfx(1); if (scr == 3) send(['p']);
+  run = createRun(L, strokes); played = 1; hud(); sfx(1); setMusic(2); if (scr == 3) send(['p']);
 }
-function rewind() { run = null; PARTS.length = 0; hud(); }
+function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
 const goTitle = () => { scr = 0; run = null; leave(); show(titleUI(snd)); };
@@ -64,7 +64,7 @@ const act = {
   dy: () => loadLevel(LEVELS.length, daySeed()),
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : show(titleUI(snd)); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
-  c: v => { col = +v; hud(); sfx(0, col); },
+  c: v => { col = +v; hud(); playNote(col); },
   u: () => { if (!run && strokes.length) { strokes.pop(); hud(); if (scr == 3) send(['u']); } },
   x: () => { if (!run && strokes.length) { strokes = []; hud(); if (scr == 3) send(['c']); } },
   p: play, r: rewind,
@@ -103,7 +103,7 @@ cv.onpointermove = e => {
 cv.onpointerup = cv.onpointercancel = endStroke;
 function endStroke() {
   if (!cur) return;
-  if (cur._len >= .3) { strokes.push(cur); sfx(0, cur._c); if (scr == 3) send(['k', cur._c, cur._p.map(v => +v.toFixed(1))]); }
+  if (cur._len >= .3) { strokes.push(cur); playNote(cur._c); if (scr == 3) send(['k', cur._c, cur._p.map(v => +v.toFixed(1))]); }
   cur = null; hud();
 }
 
@@ -114,7 +114,9 @@ function events(r, ghost) {
     if (ghost) continue;
     if (k == 5) for (let i = 0; i < 7; i++) spawn(e[2], e[3], COLS[i], 6, rnd); // rainbow win burst
     else spawn(e[2], e[3], k == 4 ? '#ccc' : COLS[c], k == 4 ? 12 : k == 6 ? 20 : 5, rnd);
-    sfx(k == 1 ? (c == 0 ? 2 : c == 6 ? 5 : 0) : [0, 0, 4, 3, 6, 7, 9, 10][k], c);
+    if (k == 0 || (k == 1 && c != 0 && c != 6)) playNote(c, 0); // the paint plays its note when the unicorn touches it
+    else if (k == 5) fanfare();
+    else sfx(k == 1 ? (c == 0 ? 2 : 5) : [0, 0, 4, 3, 6, 7, 9, 10][k], c);
   }
 }
 
@@ -135,6 +137,7 @@ function onWin() {
   const u = used(), t = total(), star = u <= t * .6;
   if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
   else if (daily && scr == 2) try { localStorage.prism26_daily = daily; } catch (e) { }
+  setMusic(1);
   if (scr == 3) { send(['w', +run._t.toFixed(3)]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= LEVELS.length - 1 || daily, daily ? 'Daily done!' : ''));
 }
