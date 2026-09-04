@@ -68,6 +68,7 @@ const act = {
   dy: () => loadLevel(LEVELS.length, daySeed()),
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : title(); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
+  co: () => { let i = 0; while (i < LEVELS.length - 1 && prog.done[i]) i++; loadLevel(i); },
   c: v => { col = +v; hud(); playNote(col); },
   u: () => { if (!run && strokes.length) { strokes.pop(); hud(); } },
   x: () => { if (!run && strokes.length) { strokes = []; hud(); } },

@@ -24,7 +24,7 @@ edges. All the agency is in the paint.
 4. **Rewind** at any time to go back to drawing.
 5. A **★** is earned when you use at most 60 % of the level's total ink.
 
-30 hand-made levels teach the colours one at a time. **Daily** is a new generated level
+40 hand-made levels in eight acts teach the colours one at a time, then combine them. **Daily** is a new generated level
 every day (same for everyone). **Online** is a best-of-three race: everyone in a room gets
 the same generated level and draws at the same time, and the first unicorn to reach the
 gem wins the round. Nobody sees anybody else's paint while the round is live — copying is
@@ -114,7 +114,7 @@ node dev.js                      # dev server on :8080 serving the unbundled sou
 ```
 
 Suite B boots the real artefact, clicks through every screen, completes level 1 with real
-pointer/touch input, injects the stored solution into all 30 levels, exercises fail/undo/
+pointer/touch input, injects the stored solution into all 40 levels, exercises fail/undo/
 clear/resize, portrait and landscape phone viewports, the lobby with the network blocked,
 and a two-page online race through an in-process WebSocket relay (`test/relay.js`).
 Any console error or page error fails the test. Screenshots land in `test-results/`.

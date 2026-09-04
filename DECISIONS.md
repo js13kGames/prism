@@ -451,3 +451,39 @@ Size after the race rework (`-O2`): 12,134 bytes — 1,178 under the limit.
   (`.w`) rather than another flat pill.
 
 Size after the title work (`-O2`): 12,474 bytes — 838 under the limit.
+
+## 15 Act 8, Continue, act-coloured level select (2026-09-04)
+
+- **Ten new levels (31–40), "Act 8 — Mastery".** The first seven acts teach one colour at a
+  time; act 8 combines them: Cellar (phase down through a lid), Return (the unicorn only
+  turns at a wall, so the gem behind the start is reached by sending it along the ceiling),
+  Overhang (too wide to phase at the bottom — climb to where the wall is thin), Chimney
+  (vine up, flip to a gem hanging from the roof), Switchyard (one wall to walk through, one
+  to climb), Ceiling Gap (flip, then chain yellow across the hole in the roof), Loft (climb
+  first, then chain across), Trampoline (dash, feather, bounce off a rock mid-water),
+  Tightrope (a vine strung under the ceiling over spikes) and Aurora, the finale: one
+  stroke of every colour, with a gate that opens only when all seven have been touched.
+  Each is verified the same way as the first thirty — its stored solution wins, empty paint
+  fails, every stroke is drawable and inside the ink budget. Cost: 249 bytes of zip for the
+  first eight, 39 for the last two — about 31 bytes a level.
+- Two designs were cut after testing rather than shipped weak. **Needle** (bounce over a
+  spike field) needed a red pad floating over the spikes, which paint gravity drops onto
+  them. **Crossing** was built on "a dash gets you over a long yellow span before it falls":
+  the trace showed the dash boost applies only while the unicorn is standing on orange, so
+  it reverts to walking speed the moment it steps onto the yellow. The rule is real and
+  worth knowing: orange is a floor you run on, not a speed you carry.
+- **Continue** on the title loads the first unfinished level (Play when there is no save), so
+  returning players do not have to find their place in the grid; the grid moved to a
+  **Levels** button in the secondary row.
+- **The level grid is one row per act**, each dotted in the colour that act teaches (act 7
+  and 8 mix every colour, so they stay white). `ACT`/`AC` in levels.js hold the boundaries,
+  and a zero-height flex spacer breaks the rows — 108 bytes for both features.
+
+- **A level that passes suite A can still be a bad level.** Return won in the sim in 11.9 s,
+  which the browser suite caught against its 12 s win timeout — and 12 s of watching one
+  violet stroke play out is tedious regardless of the timeout. It was rebuilt on a shorter
+  map (the walls now bracket x = 0…22) and wins in 5.9 s. The suite's win timeout went to
+  16 s so the two ~10 s levels have headroom on a loaded machine, not to paper over slow
+  levels.
+
+Size with 40 levels (`-O2`): 12,877 bytes — 435 under the limit.

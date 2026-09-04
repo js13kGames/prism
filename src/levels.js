@@ -1,5 +1,6 @@
-// 30 hand-authored levels. Format in docs/03: tokens separated by '|', fields by spaces.
+// 40 hand-authored levels. Format in docs/03: tokens separated by '|', fields by spaces.
 // N name | H hint | S x y dir | G x y | R/K/W/T x y w h (solid/spike/water/gate) | I <colour><ink>...
+export const ACT = [0, 6, 10, 14, 18, 22, 26, 30], AC = [0, 2, 3, 4, 5, 6]; // act 7 and 8 mix every colour: white
 export const LEVELS = [
   // Act 1 — Orange & Red, and paint that needs support
   'N First Steps|H Draw a bridge, then press Play|S 2 12 1|G 28 11|R 0 12 10 6|R 22 12 10 6|I O14 R6',
@@ -38,4 +39,15 @@ export const LEVELS = [
   'N Pinball|H Hang red from both walls|S 2 4 1|G 29 4|R 0 4 6 14|K 6 17.5 20 .5|R 26 5 6 13|I R8 O4',
   'N Free Style|S 2 14 1|G 29 3|R 0 14 32 4|R 26 4 6 1|R 12 9 8 1|R 0 0 32 1.5|R 14 1.5 2 4|K 8 13.5 6 .5|I R3 O4 Y5 G6 B3 I4 V3',
   'N Prism|S 2 14 1|G 30 7|R 0 14 6 4|W 6 16 3.5 2|R 9.5 15 2.5 3|R 12 1.5 1 13.5|R 13 15 2 3|K 15 15.5 6 .5|R 15 16 6 2|R 21 15 1 3|R 22 8 3 10|T 25 1.5 2 6.5|R 27 8 5 10|R 0 0 32 1.5|I R4 O6 Y10 G10 B4 I5 V5',
+  // Act 8 — Mastery
+  'N Cellar|H Down, then in|S 2 8 1|G 24 13|R 0 8 20 2|R 0 14 32 4|R 18 10 2 4|R 28 10 2 4|R 18 10 12 1|I I10 O6',
+  'N Return|H It only turns at a wall|S 12 14 1|G 3 3|R 0 14 22 4|R 0 2 2 12|R 20 2 2 12|R 0 0 22 2|I V4 O4',
+  'N Overhang|H Climb to where the wall is thin|S 2 14 1|G 29 13|R 0 14 32 4|R 12 8 6 6|R 16 4 2 4|I G8 I4 O4',
+  'N Chimney|H Up, over, then upside down|S 2 14 1|G 29 3|R 0 14 32 4|R 12 4 4 10|R 0 0 32 2|I G12 V4 O4',
+  'N Switchyard|H A different answer for each wall|S 2 14 1|G 29 13|R 0 14 32 4|R 10 8 3 6|R 20 4 3 10|I I5 G12 O4',
+  'N Ceiling Gap|H The roof has a hole. Bridge it|S 2 14 1|G 29 13|R 0 14 8 4|W 8 16 16 2|R 24 14 8 4|R 0 0 12 3|R 20 0 12 3|I V6 Y12 O4',
+  'N Loft|H Climb first, then chain across|S 2 14 1|G 29 5|R 0 14 32 4|R 10 6 2 8|R 20 6 12 12|I G10 Y11 O4',
+  'N Trampoline|H Dash, feather, then bounce off the rock|S 2 10 1|G 29 9|R 0 10 10 8|W 10 16 14 2|R 19 15 3 3|R 24 10 8 8|I R4 B4 O6',
+  'N Tightrope|H A vine is a road too|S 2 12 1|G 29 11|R 0 12 6 6|R 6 16 20 2|K 6 15.5 20 .5|R 26 12 6 6|R 0 2 32 2|I G36 O4',
+  'N Aurora|H One of everything|S 2 8 1|G 30 3|R 0 8 10 10|W 10 16 5 2|R 15 14 6 4|R 21 9 4 5|R 24 2 1 7|R 25 14 7 4|R 0 0 32 2|T 28 2 1 2|I R4 O6 Y6 G8 B4 I5 V4',
 ];

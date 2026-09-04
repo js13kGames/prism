@@ -1,5 +1,6 @@
 // HTML screens as template strings. Buttons carry data-a (action) and data-v (value); main.js dispatches.
 import { COLS } from './sim.js';
+import { ACT, AC } from './levels.js';
 
 export const GLYPH = '↑⇒✶⋮❋⇢⟳';
 const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Indigo phase,Violet flip'.split(',');
@@ -7,15 +8,17 @@ const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Ind
 // Title. The backdrop behind it is animated (main.js), so this screen uses the .v vignette rather than the
 // flat wash the menus use — otherwise the sky and the rainbow read as grey.
 export const titleUI = (snd, done, stars, n) => `<div class="t v"><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
-<button class="b w" data-a=go>Play</button><div><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div>
-<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : '30 levels · daily seed · online races'}</p></div>`;
+<button class="b w" data-a=co>${done ? 'Continue' : 'Play'}</button>
+<div><button data-a=go>Levels</button><button data-a=on>Online</button><button data-a=dy>Daily</button><button data-a=sn>${snd ? '🔊' : '🔇'}</button></div>
+<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p></div>`;
 
 // Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}; daily = label string or ''.
 export function selectUI(prog, daily, n) {
   let d = '';
   for (let i = 0; i < n; i++) {
-    const open = !i || prog.done[i - 1];
-    d += `<button class="d${open ? '' : ' l'}${open && !prog.done[i] ? ' g' : ''}" data-a=lv data-v=${i} style="background:${open ? COLS[i % 7] : ''}">${i + 1}${prog.stars[i] ? '★' : ''}</button>`;
+    const open = !i || prog.done[i - 1], a = ACT.filter(v => v <= i).length - 1;
+    if (i && ACT.includes(i)) d += '<i></i>'; // act break: each act gets its own row
+    d += `<button class="d${open ? '' : ' l'}${open && !prog.done[i] ? ' g' : ''}" data-a=lv data-v=${i} style="background:${open ? COLS[AC[a]] || '#fff' : ''}">${i + 1}${prog.stars[i] ? '★' : ''}</button>`;
   }
   return `<div class=t><h2>Levels</h2><div class=a>${d}</div><div>${daily ? `<button data-a=dy>${daily}</button>` : ''}<button data-a=bk>Back</button></div></div>`;
 }

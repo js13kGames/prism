@@ -1,4 +1,4 @@
-# 03 — Levels (v2: 30 levels)
+# 03 — Levels (v2: 30 levels; v2.1 adds act 8, 40 total)
 
 ## Format
 

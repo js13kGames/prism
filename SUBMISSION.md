@@ -2,9 +2,9 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **12,474 bytes** (limit 13,312; 838 bytes of headroom).
+- `dist/prism.zip` — **12,877 bytes** (limit 13,312; 435 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (17,634 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,181 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -47,6 +47,10 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 - **Leave leaves.** The lobby button used to keep the socket open, so the next round
   dragged the player back in, and a rival's paint used to stay on screen in every level
   opened afterwards.
+- **Act 8 — Mastery**: ten new levels (31–40) that combine the verbs the first seven acts
+  teach, ending on Aurora, which needs one stroke of every colour to open its gate.
+- **Continue** on the title jumps to the first unfinished level, and the level grid is one
+  row per act, dotted in the colour that act teaches.
 - **Title screen**: full-bleed animated backdrop — the rainbow paints itself in and the
   unicorn walks it on a 10 s loop — a vignette instead of a flat wash, progress on the
   front page, and a primary Play button (DECISIONS.md §14).
@@ -73,22 +77,22 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 ```
 module        source   min  deflate
 sim.js        14228   6116   3078
-levels.js      3864   3389   1442
+levels.js      5237   4638   1905
 gen.js         3946   1696    921
 audio.js       4649   2223   1295
 render.js      7645   4857   1745
 net.js         2343   1174    714
-ui.js          3947   2475   1168
-main.js       15092   7177   3813
-style.css      2337   2309    936
+ui.js          4185   2606   1236
+main.js       15185   7238   3830
+style.css      2368   2339    950
 
-bundle raw 54771, minified 28736, roadrolled 15098, html 17634, zip 12474 (zopfli)
+bundle raw 56429, minified 30177, roadrolled 15615, html 18181, zip 12877 (zopfli)
 ```
 
 ## What was cut or changed
 
 Nothing from the priority list was cut. All six tiers shipped: core sim + 7 colours +
-30 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 11 sounds);
+40 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 11 sounds);
 online race; generator + daily; particles/animation/stars; generative music.
 
 Deviations from the original spec, all logged in DECISIONS.md:
@@ -105,7 +109,7 @@ Deviations from the original spec, all logged in DECISIONS.md:
 > dashes, yellow crumbles, green is climbable, blue floats you down, indigo walks
 > through walls, violet flips gravity — and unsupported paint falls when you press
 > Play. The rainbow is also a scale: every colour is a note, and the unicorn plays
-> your painting as it runs. 30 hand-made levels, a daily generated level, and an
+> your painting as it runs. 40 hand-made levels, a daily generated level, and an
 > online best-of-three race with rivals' paint as ghosts. Mouse, touch or pen.
 
 (482 characters.)
@@ -128,9 +132,9 @@ Deviations from the original spec, all logged in DECISIONS.md:
 - If the lobby is opened offline, the browser itself may log a network error for the
   refused WebSocket connection (outside our code); the lobby shows a status line.
 
-## Test results (suite A: 30/30 levels solved, 30/30 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
+## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (12,474 bytes), one full run after the final build (the
+Suite B against the unzipped release zip (12,877 bytes), one full run after the final build (the
 two runs before it, on the build without the ghost-lifetime fix, were also 28/28 in both browsers). The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
 
 | browser | test | result |

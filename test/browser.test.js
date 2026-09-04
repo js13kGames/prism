@@ -95,7 +95,7 @@ async function runBrowser(name) {
     }
   };
   const line = (x0, y0, x1, y1, n = 10) => [...Array(n + 1)].map((_, i) => [x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n]);
-  const waitWin = page => page.waitForSelector('.t h2', { timeout: 12000 });
+  const waitWin = page => page.waitForSelector('.t h2', { timeout: 16000 });
   const inkWidth = (page, c) => page.$eval('#i' + c, b => parseFloat(b.style.width));
 
   await test('boot', async page => { await boot(page); await shots(page, 'title'); });
