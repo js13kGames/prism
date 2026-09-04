@@ -56,7 +56,7 @@ function rewind() { run = null; PARTS.length = 0; hud(); }
 // Screens
 const goTitle = () => { scr = 0; run = null; leave(); show(titleUI(snd)); };
 const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
-const goLobby = () => { scr = 3; run = null; show(lobbyUI('Connecting…', '', 0)); openLobby(); };
+const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
 const act = {
