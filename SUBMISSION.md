@@ -31,6 +31,8 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    (`j97ddpqsg8v73xn49hp7pqfx0x8dr30z`, team CommendableBard71). Set `WAVEDASH_TOKEN` to your
    API key, then `node build.js -O2`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — byte-identical to the file inside the zip.
+   **Published 2026-09-04**: build `mn7577vh48yny89ksk45b7xczh8dsh28`, release `rx73968cghm4kb05dbyaxbnp158ds0e4`,
+   https://wavedash.com/games/prism (the same 13,200-byte build as `dist/prism.zip`).
 
 ## What changed in version 2.2 (DECISIONS.md §17)
 
