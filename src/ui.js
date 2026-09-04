@@ -7,7 +7,6 @@ import { ACT, AC } from './levels.js';
 export const onWD = () => !!self.Wavedash;
 
 export const GLYPH = '↑⇒✶⋮❋⇢⟳';
-const NAMES = 'Red bounce,Orange dash,Yellow brittle,Green vine,Blue feather,Indigo phase,Violet flip'.split(',');
 
 // Title. The backdrop behind it is animated (main.js), so this screen uses the .v vignette rather than the
 // flat wash the menus use — otherwise the sky and the rainbow read as grey.
@@ -32,10 +31,10 @@ export function selectUI(prog, daily, n) {
 // first play, tag = race status (round, score, whether a rival is running) shown before the level name.
 export function hudUI(L, col, ink, play, hint, snd, tag) {
   let pal = '';
-  for (let c = 0; c < 7; c++) if (L._ink[c]) pal += `<button class="k${c == col ? ' s' : ''}" data-a=c data-v=${c} title="${NAMES[c]}" style=background:${COLS[c]}>${GLYPH[c]}<i><b id=i${c} style=width:${100 * ink[c] / L._ink[c]}%></b></i></button>`;
+  for (let c = 0; c < 7; c++) if (L._ink[c]) pal += `<button class="k${c == col ? ' s' : ''}" data-a=c data-v=${c} style=background:${COLS[c]}>${GLYPH[c]}<i><b id=i${c} style=width:${100 * ink[c] / L._ink[c]}%></b></i></button>`;
   return `<div class=h><button data-a=bk>‹</button><span>${tag ? tag + ' · ' : ''}${L._name}${hint ? ' · ' + hint : ''}</span><button data-a=sn${snd ? '' : ' class=g'}>${snd ? '🔊' : '🔇'}</button></div>` +
     (play ? `<div class=r><button class=b data-a=r>⟲ Rewind</button></div>` :
-      `<div class=r>${pal}<button data-a=u title=Undo>↶</button><button data-a=x title=Clear>✕</button><button class=b data-a=p>▶ Play</button></div>`);
+      `<div class=r>${pal}<button data-a=u>↶</button><button data-a=x>✕</button><button class=b data-a=p>▶ Play</button></div>`);
 }
 
 export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${extra || 'Gem got!'}</h2><p>Ink ${used.toFixed(1)} / ${total}${star ? ' ★' : ''}</p>

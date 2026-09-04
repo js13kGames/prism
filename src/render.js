@@ -44,7 +44,6 @@ export function drawWorld(g, L, run, t) {
     } else if (ty == 0) { // cloud block
       g.fillStyle = '#f4f2ff'; rr(g, x, y, w, h, .35); g.fill();
       g.fillStyle = '#fff'; rr(g, x + .1, y + .1, w - .2, min(.35, h - .2), .2); g.fill();
-      g.fillStyle = '#d9d4f5'; rr(g, x + .1, y + max(h - .35, .1), w - .2, min(.25, h - .2), .2); g.fill();
     }
   }
 }
@@ -72,9 +71,8 @@ export function drawGem(g, x, y, t) {
   g.restore();
 }
 
-export function drawStart(g, x, y, d) {
+export function drawStart(g, x, y) {
   g.fillStyle = '#fff8'; rr(g, x - .8, y - .12, 1.6, .24, .12); g.fill();
-  g.fillStyle = '#ffd1f0'; g.beginPath(); g.moveTo(x + d * .9, y - .5); g.lineTo(x + d * .4, y - .85); g.lineTo(x + d * .4, y - .15); g.fill();
 }
 
 // Rainbow gradient along a line (mane, tail).

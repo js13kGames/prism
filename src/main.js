@@ -3,7 +3,7 @@ import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W,
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
 import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI, onWD } from './ui.js';
-import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic } from './audio.js';
+import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic, setKey, setSeq } from './audio.js';
 import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
 
@@ -12,7 +12,7 @@ const rnd = Math.random; // render-side randomness only (particles); the sim nev
 let dpr, sc, ox, oy;      // canvas scale: world unit → css px, and letterbox offset
 let scr = 0;              // 0 title, 1 select, 2 game, 3 lobby
 let li = 0, L, strokes = [], run = null, col = 0, cur = null, played = 0, failT = 0, daily = 0;
-let T = 0, last = 0, acc = 0, hintOn = 1;
+let T = 0, last = 0, acc = 0;
 const A0 = Math.PI * 1.018, AS = Math.PI * .964; // title rainbow: the sweep whose ends meet the bottom edge
 let prog = { done: [], stars: [], snd: 1 };
 try { prog = { ...prog, ...JSON.parse(localStorage.prism26_progress || '{}') }; } catch (e) { }
@@ -36,9 +36,9 @@ const total = () => L._ink.reduce((s, v) => s + v, 0);
 const preview = () => createRun(L, strokes)._s.forEach((s, i) => strokes[i]._sup = s._sup);
 function hud() {
   if ((scr != 2 && scr != 3) || !L || over) return;
-  if (!run) preview();
+  if (!run) { preview(); setSeq(strokes.map(s => [s._c, s._p[0]])); } // the canvas is the melody (audio.js)
   const tag = scr == 3 ? 'Round ' + round + ' · ' + mine() + '–' + theirs() + (ghosts.some(g => g._go) ? ' · rival racing' : '') : '';
-  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, hintOn && !played ? L._hint : '', snd, tag));
+  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, played ? '' : L._hint, snd, tag));
 }
 
 // Load level i, or the daily/online generated level when i == LEVELS.length (from `seed`).
@@ -46,20 +46,22 @@ function loadLevel(i, seed) {
   li = i; daily = i == LEVELS.length ? seed : 0;
   L = parseLevel(daily ? gen(seed)[0] : LEVELS[i]);
   strokes = []; run = null; cur = null; played = 0; over = 0; PARTS.length = 0;
-  col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2; hud();
+  col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2;
+  setKey(((daily ? seed : (i / 5 | 0) * 7) + 5) % 12 - 5); setMusic(1); hud(); // key: a fifth up every five levels (C G D A E B F# C#), the seed's for generated ones
 }
 
+let hits = []; // colours the unicorn touched this run, in order — the win fanfare replays them
 function play() {
   if (run) return;
-  run = createRun(L, strokes); played = 1; hud(); sfx(1); setMusic(2); if (scr == 3) send(['p']);
+  run = createRun(L, strokes); played = 1; hits = []; hud(); sfx(1); setMusic(2); if (scr == 3) send(['p']);
 }
 function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
 const count = a => a.filter(Boolean).length;
 const title = () => show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length));
-const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); title(); };
-const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
+const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); setMusic(0); title(); };
+const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; setMusic(0); show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
 const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
@@ -108,7 +110,7 @@ cv.onpointermove = e => {
 cv.onpointerup = cv.onpointercancel = endStroke;
 function endStroke() {
   if (!cur) return;
-  if (cur._len >= .3) { strokes.push(cur); playNote(cur._c); }
+  if (cur._len >= .3) { strokes.push(cur); playNote(cur._c, 1, cur._p[0]); }
   cur = null; hud();
 }
 
@@ -119,9 +121,11 @@ function events(r, ghost) {
     if (ghost) continue;
     if (k == 5) for (let i = 0; i < 7; i++) spawn(e[2], e[3], COLS[i], 6, rnd); // rainbow win burst
     else spawn(e[2], e[3], k == 4 ? '#ccc' : COLS[c], k == 4 ? 12 : k == 6 ? 20 : 5, rnd);
-    if (k == 0 || (k == 1 && c != 0 && c != 6)) playNote(c, 0); // the paint plays its note when the unicorn touches it
-    else if (k == 5) fanfare();
+    if (k < 2) hits.push(c);
+    if (k == 0 || (k == 1 && c != 0 && c != 6)) playNote(c, 0, e[2]); // the paint plays its note from where the unicorn is
+    else if (k == 5) fanfare(hits);
     else sfx(k == 1 ? (c == 0 ? 2 : 5) : [0, 0, 4, 3, 6, 7, 9, 10][k], c);
+    if (k == 6) ach('gate');
   }
 }
 
@@ -140,8 +144,13 @@ function frame(ts) {
 
 function onWin() {
   const u = used(), t = total(), star = u <= t * .6;
-  if (!daily && scr == 2) { prog.done[li] = 1; if (star) prog.stars[li] = 1; save(); }
-  else if (daily && scr == 2) try { localStorage.prism26_daily = daily; } catch (e) { }
+  if (!daily && scr == 2) {
+    prog.done[li] = 1; if (star) prog.stars[li] = 1; save();
+    const d = count(prog.done), s = count(prog.stars);
+    ach('gem'); if (d > 19) ach('half'); if (d > 39) ach('all'); if (s > 9) ach('star10'); if (s > 39) ach('star40'); if (strokes.length == 1) ach('solo');
+    lb('levels', d); lb('stars', s);
+  }
+  else if (daily && scr == 2) { try { localStorage.prism26_daily = daily; } catch (e) { } ach('daily'); lb('daily-' + daily, run._t * 1e3 | 0, 1); }
   setMusic(1);
   if (scr == 3) { send(['w', +run._t.toFixed(3), strokes.map(k => [k._c, k._p.map(v => +v.toFixed(1))])]); raceWin(myId(), run._t); return; }
   show(winUI(u, t, star, li >= LEVELS.length - 1 || daily, daily ? 'Daily done!' : ''));
@@ -207,8 +216,8 @@ function openLobby(code) {
 // Copy the room link — or, on Wavedash, the code on its own: the game runs in that platform's iframe, so its
 // own URL is a sandbox path nobody can open, and the other player types the code in anyway.
 // navigator.clipboard needs a secure context and the clipboard-write permission, neither of which an embedded
-// game can count on, and it rejects silently — so the synchronous execCommand path (valid inside this click
-// gesture) runs first, and if both fail the text itself goes in the status line to be copied by hand.
+// game can count on, and it rejects silently — so only the synchronous execCommand path (valid inside this click
+// gesture) is used, and if it fails the text itself goes in the status line to be copied by hand.
 function copyLink() {
   const wd = onWD(), u = wd ? room : location.href.split('#')[0] + '#r=' + room;
   const t = document.createElement('textarea'), done = (wd ? 'Code' : 'Link') + ' copied!';
@@ -217,7 +226,6 @@ function copyLink() {
   document.body.appendChild(t); t.select(); t.setSelectionRange(0, 1e5);
   try { ok = document.execCommand('copy'); } catch (e) { }
   t.remove();
-  try { navigator.clipboard.writeText(u).then(() => lobby(done), () => { }); } catch (e) { }
   lobby(ok ? done : u);
 }
 function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = 0; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); }
@@ -244,7 +252,7 @@ function raceWin(id, t) {
   const won = id == myId();
   score[id] = (score[id] || 0) + 1;
   setMusic(1);                       // the winner's fanfare already fired from their own win event
-  if (!won) { run = null; sfx(6); }
+  if (won) ach('race'); else { run = null; sfx(6); }
   over = {
     _w: won, _d: mine() > 1 || theirs() > 1 || round > 2,
     _s: (won ? 'You reached the gem first, in ' : 'Your rival got there first, in ') + t.toFixed(2) + 's',
@@ -252,10 +260,16 @@ function raceWin(id, t) {
   showRes();
 }
 
-window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get scr() { return scr; }, get strokes() { return strokes; } };
+window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get strokes() { return strokes; } };
 // Wavedash: the platform injects a global `Wavedash` before the game boots, so nothing is loaded from outside
-// the zip; everywhere else (js13k, offline, file://) this block does nothing.
-try { const W = self.Wavedash; if (W && !W.initialized) { W.init(); if (W.readyForEvents) W.readyForEvents(); } } catch (e) { }
+// the zip; everywhere else (js13k, offline, file://) every wd() call is a no-op. Achievements are created on the
+// portal by id (tools/wavedash-achievements.sh); leaderboards are created on first use. Nothing here may throw
+// or leave a rejected promise behind — either would be a console error, which is a release blocker.
+const wd = f => { try { const W = self.Wavedash; if (W) return f(W); } catch (e) { } };
+const ach = id => wd(W => W.setAchievement(id, 1));
+// lb(name, value, isTime): sort 0 = ascending (times) / 1 = descending; display 2 = milliseconds / 0 = numeric.
+const lb = (name, v, t) => wd(W => W.getOrCreateLeaderboard(name, t ? 0 : 1, t ? 2 : 0).then(r => W.uploadLeaderboardScore(r.data.id, v, 1)).catch(e => { }));
+wd(W => { if (!W.initialized) { W.init(); if (W.readyForEvents) W.readyForEvents(); } });
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);
