@@ -59,10 +59,13 @@ function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
 const count = a => a.filter(Boolean).length;
-const title = () => show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length));
+const title = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length, d)); };
 const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); setMusic(0); title(); };
-const goSelect = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } scr = 1; run = null; setMusic(0); show(selectUI(prog, 'Daily ' + new Date().toISOString().slice(5, 10) + (d ? ' ✓' : ''), LEVELS.length)); };
-const goLobby = () => { scr = 3; run = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
+const goSelect = () => { scr = 1; run = null; setMusic(0); show(selectUI(prog, LEVELS.length)); };
+// L = null: the lobby must forget whatever level was open, because 'no level' is how the peers-changed handler
+// tells 'no round yet' (show the lobby, with Start for the host) from 'round live' (show the HUD). A stale level
+// made the host jump to that level's HUD the moment a guest joined, while the guest waited for Start forever.
+const goLobby = () => { scr = 3; run = null; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
 const act = {

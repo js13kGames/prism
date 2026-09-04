@@ -523,3 +523,77 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
 - Worth recording for later: because the Wavedash deadline extension is for deploying only —
   "no adding extra features or bugfixing allowed" — a Wavedash-specific integration would
   have had to ship in the submitted zip. It was now or never, and the answer was never.
+
+## 17 Vines that go back, a crumble that hurt, the paint as the score, and Wavedash achievements (2026-09-04)
+
+- **The vine bug.** The report was "I go up and in the middle it starts to go back, even
+  when horizontal". Reproduced in Node with hand-drawn-style strokes (points every 0.2 u
+  with ±0.04 u of jitter, which is what the pointer produces): two rules that were written
+  for the clean, few-segment stored solutions fail on real strokes.
+  1. *"First or last segment creeps, mid-vine turns around"* — a hand-drawn vine has dozens
+     of short segments, so its base on a floor (both sides of the unicorn blocked within
+     R of the floor) is "mid-vine" from the second segment on. The climb flipped direction
+     every frame: stuck oscillating at the base of a floor-started vine, or, on a vine lying
+     along the floor, walking back and forth forever. **Now a double-blocked position holds
+     still and creeps; a climb never turns around; a vine always carries the unicorn to one
+     end and flings it off** — even into a floor, where it simply lands and walks on.
+  2. *"Continue the travel direction"* used `v·segment` on one jittered segment, and the
+     unicorn walking into a vertical vine still carries the frame's gravity increment
+     (vy = +0.67, cancelled by the floor only after paint contacts). So `4·(±0.08) − 0.67·0.2`
+     was as likely to say "down" as "up", and the climb started by descending into the
+     floor. **Now the velocity decides only within ~53° of the tangent; else the facing
+     direction on a flat enough segment; else up.**
+  3. The drawing clip tested only the midpoint of each new segment, so a stroke could dip
+     up to a jitter's worth inside a floor and put the "above" position within R of it.
+     The point itself is now clipped too.
+  With the old rules, stored solution L40 (Aurora) had been *relying* on the yo-yo: it
+  grabbed the vine downward, hit the floor end, bounced back up, and only on that second
+  pass landed on the indigo. Re-authored (orange and blue strips at the start, a walk over
+  the yellow and red strips, vine, indigo raised to 8.7, violet) it wins in 8.05 s.
+- **Aurora's gate was decorative.** Both the old and the new trace showed the win with
+  mask 122 and the gate closed: a gravity flip at x ≈ 27 flies a diagonal that passes beside
+  a 2-tall gate hanging from the ceiling. The gate is now 6 tall (`T 28 2 1 6`), so the
+  flight hits it unless all seven colours have been touched; the new solution opens it.
+- **Crumble sound.** The yellow-breaks sound was `[.6,,90,…,4,1.2,…,noise 2]`: a
+  full-volume bit-noise burst (peak 0.18, "roughness" — mean sample-to-sample step — 0.038,
+  the harshest sound in the table by 3×). Rendered offline (`tools/`-style script in the
+  session scratchpad) and replaced by a quiet, low, 25 Hz-stuttered crackle (peak 0.09,
+  roughness 0.009); the paint-landing thud got the same treatment (peak 0.09, 0.001).
+- **Music.** The brief was "better and innovative, think properly". The one idea worth
+  building on was already there — colour = scale degree — so everything new makes the paint
+  the sheet music: the strokes on the canvas, in draw order, are looped as the melody (an
+  undo changes the tune); notes pan to where they were drawn and to where the unicorn
+  touches them; the win fanfare replays the colours the run touched; the key rises a fifth
+  every five levels; play adds a kick on 1 and 3, a hat, and a high off-beat chord tone; and
+  one effect, a dotted-eighth (0.375 s at 120 BPM) feedback echo through a 1.5 kHz low-pass,
+  makes the sparse notes an ambient bed. Everything still comes from oscillators + ZzFX, so
+  the zip carries no audio data. Cost: audio.js 1,295 → ~1,580 bytes deflated.
+- **Wavedash achievements and leaderboards** ship in the same zip (the platform injects
+  the SDK global; every call is inside a `wd()` guard that swallows exceptions and rejected
+  promises, because either would be a console error). The SDK's enums are plain numbers
+  (sort 0 = ascending, display 2 = milliseconds), so no property names are spelled out.
+  Nine achievements (created on the portal by `tools/wavedash-achievements.mjs`, ids in
+  main.js), leaderboards `levels`, `stars` and `daily-<seed>` created on first use. The
+  `platform-achievements` suite-B test drives a win through a recording mock and asserts
+  the calls; the real sandbox (`wavedash dev`) needs an interactive wavedash.com login in the
+  browser, so `tools/wavedash-sandbox.mjs` stops at the auth redirect when run headless.
+- **Bytes.** All of the above pushed the zip to 13,504 at -O1 (192 over). Recovered without
+  touching any feature tier: palette tooltips (desktop-only, colour names are in the README),
+  the cloud block's shadow band, the start marker's direction flag (the unicorn already
+  faces its direction), the async-clipboard fallback in Copy link (execCommand is the path
+  that works in every target browser and inside platform frames), the primary button's
+  press-shadow CSS, `overscroll-behavior` (moot under `touch-action:none` + `overflow:hidden`),
+  and the act→key table (a formula). Terser option sweeps (passes, unsafe_*, hoist, module,
+  ecma 2020) were measured and gained nothing worth keeping. The working target of 12,900
+  is no longer met; the hard limit is, with ~110 bytes of margin.
+- **The lobby started a match on join.** Reported from Wavedash: the host creates a room, a
+  guest joins, the host's screen jumps straight into a level while the guest is told to
+  wait for the host to start. `openLobby`'s peers-changed handler uses "is there a level
+  loaded" to tell "no round yet" (show the lobby with Start) from "round live" (show the
+  HUD), but `goLobby` never cleared the level, so a host who had played *any* level before
+  going Online carried it into the room and was shown that level's HUD (with a round tag of
+  0–0 and no Start button) the moment the guest's hello arrived. Only `leaveRoom` cleared
+  it, which is why the suite — which booted straight into Online — never saw it. `goLobby`
+  now clears the level; the online-race test plays a level first and asserts that neither
+  page shows a HUD before the host presses Start (it failed on the old build with the exact
+  symptom: the host never reached "2 players").

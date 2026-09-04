@@ -70,15 +70,19 @@ Falling strokes never collide with the unicorn.
 
 - When the unicorn touches green, it enters **climb** mode: gravity off, velocity is
   along the stroke tangent at the closest point, magnitude `max(WALK, entry speed)`
-  (entry speed decays to WALK at 10 u/s² while climbing), direction chosen so that it
-  continues its current travel direction.
+  (entry speed decays to WALK at 10 u/s² while climbing). Direction along the polyline:
+  the travel direction if the velocity is within ~53° of the segment tangent; otherwise
+  the facing direction if the segment is flat enough (|dx| > 0.6·len); otherwise up
+  (down under flipped gravity). Hand-drawn segments are short and jittered, so neither a
+  segment's stray sideways component nor the per-frame gravity increment may decide.
 - In climb mode the unicorn is positioned at `closest_point + n * R` each frame and
   advances along the polyline. It follows curves, goes vertical, goes upside down.
 - Leaving the end of a vine: exits climb mode with velocity = tangent × 8 u/s
   (the "fling"). While airborne after a fling the unicorn ignores green for 0.15 s.
-- If the unicorn's position on either side of the vine overlaps solid geometry: on
-  the first or last segment it keeps advancing without moving (so vines may start on
-  a floor and end over a ledge corner); mid-vine it turns around.
+- If the unicorn's position on its side of the vine overlaps solid geometry it swaps
+  to the other side; if both sides are blocked it holds still and keeps advancing along
+  the vine until a side is free (so vines may start on a floor and end over a ledge
+  corner). A climb never turns around: a vine always carries the unicorn to one end.
 - A vine that loses support (its yellow strut crumbled) drops the unicorn.
 - Intro level 11 (climb a wall), 12 (ceiling walk), 13 (fling), 14 (bounce into a vine).
 

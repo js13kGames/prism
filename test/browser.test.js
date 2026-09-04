@@ -198,6 +198,8 @@ async function runBrowser(name) {
     let spy;
     try {
       for (const p of [page, page2]) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); }
+      // The host has played a level before going online: the lobby must not mistake that level for a live round.
+      await openLevel(page, 0); await page.click('[data-a=bk]'); await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=on]');
       const at = (label, pr) => pr.catch(e => { throw new Error(label + ': ' + String(e.message).slice(0, 100)); });
       await page.click('[data-a=on]'); await page.click('[data-a=cr]');
       await at('room created', page.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
@@ -205,6 +207,7 @@ async function runBrowser(name) {
       await page2.click('[data-a=on]'); await page2.fill('#j', code); await page2.click('[data-a=jn]');
       for (const p of [page, page2]) await at('2 players', p.waitForFunction(() => /2 players/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
       await shots(page, 'lobby-2players');
+      if (await page.$('[data-a=p]') || await page2.$('[data-a=p]')) throw new Error('a level HUD is showing before the host pressed Start');
       const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
       if (await guest.$('[data-a=st]')) throw new Error('both pages think they are host');
       await host.click('[data-a=st]');

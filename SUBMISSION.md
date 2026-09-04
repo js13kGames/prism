@@ -1,10 +1,10 @@
-# SUBMISSION.md — PRISM (js13kGames 2026), version 2.1
+# SUBMISSION.md — PRISM (js13kGames 2026), version 2.2
 
 ## Artefact
 
-- `dist/prism.zip` — **12,968 bytes** (limit 13,312; 344 bytes of headroom).
+- `dist/prism.zip` — **13,200 bytes** (limit 13,312; 112 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search).
-- `unzip -l`: exactly one entry, `index.html` (18,392 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,589 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -31,6 +31,33 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    (`j97ddpqsg8v73xn49hp7pqfx0x8dr30z`, team CommendableBard71). Set `WAVEDASH_TOKEN` to your
    API key, then `node build.js -O2`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — byte-identical to the file inside the zip.
+
+## What changed in version 2.2 (DECISIONS.md §17)
+
+- **Vines never go back.** Hand-drawn vines (dozens of short, jittered segments) used to
+  turn around at any point where both sides of the unicorn were blocked, and the grab
+  direction came from one jittered segment plus the frame's gravity increment — so a vine
+  starting on a floor could oscillate forever or be climbed downwards first. A blocked
+  position now holds still and creeps; the direction ignores anything within 53° of
+  perpendicular; stroke points are clipped out of solids as well as midpoints.
+- **Online rooms no longer start on join.** A host who had played any level before going
+  Online was shown that level's HUD the moment a guest joined (the lobby never cleared the
+  loaded level), while the guest waited for Start forever. Reported from Wavedash; the race
+  test now plays a level before creating the room.
+- **Aurora's gate really needs all seven colours** (it was 2 tall and a gravity flip flew
+  around it; now 6 tall), and its stored solution touches every colour.
+- **The crumble and paint-landing sounds** are quiet low crackles instead of full-volume
+  noise bursts (peak halved, harshness cut 4×, measured offline).
+- **Music: the paint is the score.** The strokes on the canvas loop as the melody in draw
+  order; notes pan to where they were painted / where the unicorn touches them; a
+  dotted-eighth feedback echo; kick, hat and a high off-beat chord tone in Play; the key
+  rises a fifth every five levels; the win fanfare replays the colours the run touched.
+- **Wavedash achievements (9) and leaderboards** (`levels`, `stars`, `daily-<seed>`
+  times) in the same zip, through the platform's injected SDK global, fully guarded.
+- **Bytes** recovered to stay under the limit: palette tooltips, the cloud shadow band, the
+  start marker's flag, the async-clipboard fallback, the primary button's press shadow,
+  `overscroll-behavior`, the dated Daily button on the level grid (its ✓ moved to the
+  title's Daily button).
 
 ## What changed in version 2.1 (DECISIONS.md §12–13)
 
@@ -77,24 +104,25 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 
 ```
 module        source   min  deflate
-sim.js        14228   6116   3078
+sim.js        14490   5999   3042
 levels.js      5237   4638   1905
 gen.js         3946   1696    921
-audio.js       4649   2223   1295
-render.js      7645   4857   1745
+audio.js       6873   2836   1577
+render.js      7390   4663   1700
 net.js         2343   1174    714
-ui.js          4486   2662   1266
-main.js       15451   7256   3849
-style.css      2538   2505   1009
+ui.js          4261   2492   1168
+main.js       17047   7699   4050
+style.css      2370   2338    958
 
-bundle raw 56983, minified 30252, roadrolled 15660, html 18392, zip 12968 (zopfli)
+bundle raw 60555, minified 30848, roadrolled 16024, html 18589, zip 13200 (zopfli)
 ```
 
 ## What was cut or changed
 
 Nothing from the priority list was cut. All six tiers shipped: core sim + 7 colours +
-40 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 11 sounds);
-online race; generator + daily; particles/animation/stars; generative music.
+40 levels + progress; title/select/hints/rewind/undo/clear; sound (ZzFX, 13 sounds);
+online race; generator + daily; particles/animation/stars; generative music with the
+painting as the melody.
 
 Deviations from the original spec, all logged in DECISIONS.md:
 - v2 colour changes above (docs/01–05 rewritten to match).
@@ -102,27 +130,27 @@ Deviations from the original spec, all logged in DECISIONS.md:
   (documented, not changed).
 - Paint contacts resolve before rect contacts (so a pad drawn on a floor line works).
 - Run state is numeric (0/1/2) instead of strings.
-- The Daily "done" flag is a ✓ on the select screen (no streaks, no scores).
+- The Daily "done" flag is a ✓ on the title's Daily button (no streaks; the Wavedash build posts the time to a `daily-<seed>` leaderboard).
 
 ## Submission form description (≤ 500 chars)
 
 > Seven colours of rainbow paint, each with its own physics: red bounces, orange
 > dashes, yellow crumbles, green is climbable, blue floats you down, indigo walks
 > through walls, violet flips gravity — and unsupported paint falls when you press
-> Play. The rainbow is also a scale: every colour is a note, and the unicorn plays
-> your painting as it runs. 40 hand-made levels, a daily generated level, and an
-> online best-of-three race with rivals' paint as ghosts. Mouse, touch or pen.
+> Play. The rainbow is also a scale: every colour is a note, your strokes loop as the
+> melody, and the unicorn plays your painting as it runs. 40 hand-made levels, a daily
+> generated level, and an online best-of-three race. Mouse, touch or pen.
 
-(482 characters.)
+(480 characters.)
 
 ## Category checklist
 
 | Category | Status |
 |---|---|
 | **Desktop** | ✔ Chrome + Firefox, keyboard shortcuts (1–7, Z, C, Space, Esc), mouse drawing, resize-safe. |
-| **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overscroll-behavior`), palette buttons 46×52 css px (≥ 44), 30-level grid fits a 390 px screen, portrait (390×844) and landscape (844×390) tested with real touch input. |
+| **Mobile** | ✔ Pointer Events with `touch-action:none`, no page scroll/zoom (`user-scalable=no`, `overflow:hidden`), palette buttons 46×52 css px (≥ 44), 30-level grid fits a 390 px screen, portrait (390×844) and landscape (844×390) tested with real touch input. |
 | **Online** | ✔ Best-of-three race over the js13kGames relay (`wss://relay.js13kgames.com/prism/{room}`) on a plain WebSocket (no import, reconnect on unexpected close), rooms `prism26-XXXX`, shareable `#r=CODE` links, no paint shared while a round is live (the only in-round message is "started running"), the winner's run replaying from the deterministic sim on the result card, round cards and a running score, degrades to a status line offline. Verified against the live relay with two real browser pages. |
-| **Wavedash** | ✔ Ready to upload: `wavedash.toml` is checked in and `build.js` writes `dist/wavedash/index.html` (the same file that ships in the zip) as the `upload_dir`. The platform injects a global `Wavedash`, so the SDK costs no bytes and no external resource: `main.js` calls `init()`/`readyForEvents()` only when that global exists. Remaining step is a game ID from the Developer Portal, then `wavedash build push` / `wavedash publish` (by 20 September; no new features or fixes after the deadline). Nothing depends on the host origin except `localStorage` keys prefixed `prism26_`. |
+| **Wavedash** | ✔ Ready to upload: `wavedash.toml` is checked in and `build.js` writes `dist/wavedash/index.html` (the same file that ships in the zip) as the `upload_dir`. The platform injects a global `Wavedash`, so the SDK costs no bytes and no external resource: `main.js` calls `init()`/`readyForEvents()` only when that global exists, and the same guarded path posts nine achievements (created on the portal by `tools/wavedash-achievements.mjs`) and three kinds of leaderboard (`levels`, `stars`, `daily-<seed>` times). Published with `wavedash build push` / `wavedash publish` (deadline 20 September; no new features or fixes after it). Nothing depends on the host origin except `localStorage` keys prefixed `prism26_`. |
 
 ## Known limitations
 
@@ -135,8 +163,9 @@ Deviations from the original spec, all logged in DECISIONS.md:
 
 ## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
 
-Suite B against the unzipped release zip (12,968 bytes), one full run after the final build (the
-two runs before it, on the build without the ghost-lifetime fix, were also 28/28 in both browsers). The live js13kGames relay was exercised separately with `tools/relaytest.mjs`.
+Suite B against the unzipped release zip (13,200 bytes), one full run after the final build. The live
+js13kGames relay was exercised separately with `tools/relaytest.mjs`; the Wavedash SDK calls are exercised
+against a recording mock (`platform-achievements`) because the real sandbox needs an interactive login.
 
 | browser | test | result |
 |---|---|---|
@@ -152,8 +181,9 @@ two runs before it, on the build without the ghost-lifetime fix, were also 28/28
 | chromium | online-race | pass |
 | chromium | resize | pass |
 | chromium | audio-gesture | pass |
-| chromium | mute-glyph | pass |
 | chromium | platform-copy | pass |
+| chromium | platform-achievements | pass |
+| chromium | mute-glyph | pass |
 | chromium | room-link | pass |
 | firefox | boot | pass |
 | firefox | screens | pass |
@@ -167,19 +197,9 @@ two runs before it, on the build without the ghost-lifetime fix, were also 28/28
 | firefox | online-race | pass |
 | firefox | resize | pass |
 | firefox | audio-gesture | pass |
-| firefox | mute-glyph | pass |
 | firefox | platform-copy | pass |
+| firefox | platform-achievements | pass |
+| firefox | mute-glyph | pass |
 | firefox | room-link | pass |
 
-Totals: 30/30. No console errors or warnings.
-
-What `online-race` now proves, per browser: two pages get the same generated level and a `Round 1` card; the
-host sees `rival racing` when the guest presses Play but receives **no** stroke and **no** ghost run; a third
-client's win produces the result card, the score and a running replay of that winner's paint on both pages;
-the guest is told to wait while only the host gets **Next round**; a second win ends the match with
-**Rematch**, the rematch resets the score to `Round 1 · 0–0`, and leaving the room for level 1 leaves no
-rival paint behind.
-
-`room-link` proves: **Copy link** puts `<url>#r=CODE` on the clipboard (read back from the clipboard in
-chromium; the status line in firefox), a page opened on that link joins the room, and **Leave** disconnects —
-a round the host starts afterwards does not pull the leaver back in.
+Totals: 32/32. No console errors or warnings.

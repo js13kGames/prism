@@ -62,9 +62,10 @@ stroke's y so falling paint is covered) for determinism tests.
    A stroke entirely below `H + OUT` is removed.
 4. If in **climb** mode: advance along the stroke polyline by `speed*DT`; set
    position = point on polyline + normal*R. If the polyline end is passed → exit
-   climb with velocity = tangent*FLING, set `fcd=0.15`. If both sides of the vine are
-   blocked by solids: on the first/last segment keep advancing without moving,
-   otherwise reverse. A dead or falling vine drops the unicorn. Skip to step 8.
+   climb with velocity = tangent*FLING, set `fcd=0.15`. If the unicorn's side of the
+   vine is blocked by a solid, swap sides; if both sides are blocked, keep advancing
+   without moving (a climb never reverses). A dead or falling vine drops the unicorn.
+   Skip to step 8.
 5. Integrate: `vy += g*G*DT*(feathered ? FEATHER : 1)` (feathered = `fe` and not
    grounded), clamp `|vy| ≤ MAXFALL`, and while feathered cap the fall speed at FMAX.
    If grounded and (surface is not blue, or |vx| < WALK): ease `vx` toward
@@ -158,12 +159,19 @@ Wrap in try/catch (private mode). Never clear other keys.
 ## Audio (audio.js)
 
 ZzFX mini (the ~1 KB version; it is public domain / MIT — credit in README). Sounds:
-stroke tick (pitch by colour), play, bounce, crumble, fling, flip, fail, win, click.
-AudioContext created on the first user gesture. Mute toggle persisted.
-Music (same file): `note(degree, octave)` maps colour indices onto C major; `tone()`
-is an oscillator + gain envelope; `tick()` (setInterval 200 ms) schedules beats
-~0.35 s ahead of `ac.currentTime`; `setMusic(1|2)` picks calm/lively; `playNote(c, o)`
-and `fanfare()` are called from main.js.
+stroke tick (pitch by colour), play, bounce, crumble, fling, flip, fail, win, click,
+gate, paint lands, kick, hat. `at` lets the sequencer start a zzfx buffer at a scheduled
+time (the drums). AudioContext created on the first user gesture; master gain → destination,
+plus a send bus `dl` → 0.375 s delay → 1.5 kHz low-pass → feedback 0.4 → master. Mute
+toggle persisted (master gain 0 also kills notes scheduled ahead).
+Music (same file): `note(degree, octave)` maps colour indices onto a major scale
+transposed by `key` (`setKey`, from main.js: a fifth per five levels, or the seed);
+`tone(f, t, len, wave, gain, pan, echo)` is oscillator → gain envelope → StereoPanner;
+`tick()` (setInterval 200 ms) schedules eighths ~0.35 s ahead of `ac.currentTime`: bass +
+pad triad on the bar, on each quarter the next entry of `seq` (set by main.js's hud():
+`[colour, x]` per stroke on the canvas; empty → chord arpeggio), and in mode 2 kick/hat and
+a high off-beat chord tone. `setMusic(0|1|2)` = menus / draw / play; `playNote(c, o, x)`
+and `fanfare(colours)` are called from main.js.
 
 ## Performance
 

@@ -70,7 +70,7 @@ Indigo (19), Violet (23), Gate mechanic (27).
 1. **Title** — "PRISM", a unicorn idling on a rainbow arc, tap to start, small
    "Online" and "Daily" buttons. Sound toggle icon.
 2. **Level select** — 30 rainbow-coloured dots in a grid. Locked dots grey. Completed
-   dots coloured, starred ones with a small star. A Daily button below the grid.
+   dots coloured, starred ones with a small star. (The title's Daily button shows a ✓ once today's daily is done.)
 3. **Game** — canvas + HUD. HUD top: level name, hint text (short, disappears after
    first Play). HUD bottom (draw phase): palette buttons with ink bars, Undo, Clear,
    Play. HUD bottom (play phase): Rewind. HUD top-left: back button.
@@ -100,12 +100,16 @@ Keep UI text tiny; the ink bars and colour swatches do the talking.
 
 ## Music
 
-The rainbow is a C-major scale: colour index = scale degree (red C … violet B).
-Selecting a colour or finishing a stroke plays its note (octave +1); when the unicorn
-touches a stroke, that colour's note plays (octave 0), so a run plays the painting
-back. A scheduler (`audio.js`) plays a I–V–vi–IV backing at 120 BPM on oscillators:
-bass on the bar, a chord-tone arpeggio on each beat, plus off-beat eighths while the
-unicorn is running. Winning plays a run up the scale. Mute silences all of it.
+The rainbow is a major scale: colour index = scale degree (red = tonic … violet =
+seventh). The key rises a fifth every five levels; generated levels take it from the seed.
+Selecting a colour or finishing a stroke plays its note (octave +1, panned to where it
+was drawn); when the unicorn touches a stroke that colour's note plays (octave 0, panned
+to the unicorn), so a run plays the painting back. The strokes on the canvas, in draw
+order, are the melody: a scheduler (`audio.js`, 120 BPM) loops them four to the bar over
+an I–V–vi–IV bass and pad chord (an empty canvas gets a chord arpeggio), adds a kick,
+a hat and a high off-beat chord tone while the unicorn runs, and every note goes through
+a dotted-eighth feedback echo with a darkening filter. Winning replays the colours the
+run touched, in order, then the tonic triad. Mute silences all of it.
 
 ## Hint system
 

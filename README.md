@@ -50,7 +50,7 @@ Works in portrait and landscape; the world is letterboxed, the palette stays ≥
 | Red — Bounce | ↑ | Landing on it launches the unicorn along the surface normal (27–30 u/s: a 9–11 unit rise; angled pads aim it). Walking onto it from level ground does nothing — you need a drop, even a tiny one. |
 | Orange — Dash | ⇒ | Walk speed ×2.3 while on it; momentum carries when you leave the edge. |
 | Yellow — Brittle | ✶ | Lots of ink, but each stroke crumbles 0.6 s after the unicorn first touches it. Chain short strokes, use the collapse as a trapdoor, or let it drop a bar it was holding up. |
-| Green — Vine | ⋮ | The unicorn sticks to it and walks along it in any orientation — up walls, along ceilings. Off the end it is flung at 8 u/s. |
+| Green — Vine | ⋮ | The unicorn sticks to it and walks along it in any orientation — up walls, along ceilings — always to one end, where it is flung off at 8 u/s. |
 | Blue — Feather | ❋ | Never slows the unicorn down (dash speed is kept across it), and after touching it the unicorn falls slowly: a glide that carries it across gaps and down past hazards until it stands on something else. |
 | Indigo — Phase | ⇢ | The only colour you can paint through solid blocks. While the unicorn is on an indigo line it walks straight through the blocks the line passes through: through walls, down through floors, up inside towers. Gates and hazards are never phased. |
 | Violet — Flip | ⟳ | Touching it flips gravity for the unicorn. It re-arms once the unicorn is a unit away. |
@@ -59,12 +59,24 @@ Levels 27 and 30 add a **gate** that opens once all seven colours have been touc
 
 ### The rainbow is a scale
 
-The seven colours are the seven notes of C major (red C, orange D, yellow E, green F,
-blue G, indigo A, violet B). Picking a colour or finishing a stroke plays its note, and
-when the unicorn touches a stroke that colour sounds again, so the run plays your painting
-back. Underneath, a small generative backing (I–V–vi–IV on oscillators, 120 BPM) stays
-calm while you draw and adds off-beats while the unicorn runs. Everything is synthesised;
-there is no audio data in the zip.
+The seven colours are the seven degrees of a major scale (red is the tonic, violet the
+seventh), which makes the paint the sheet music and the unicorn the playhead:
+
+- Picking a colour or finishing a stroke plays its note, panned to where you drew it.
+- **The strokes on the canvas are the melody.** A sequencer loops them, in the order you
+  drew them, four to the bar over an I–V–vi–IV pad and bass — so every level's soundtrack
+  is the player's own painting, and it changes with every undo. An empty canvas gets a
+  plain chord arpeggio.
+- When the unicorn touches a stroke that colour sounds again, from where the unicorn is.
+  A soft kick and hat come in while it runs.
+- Reaching the gem replays the colours the run touched, in order, resolved onto the tonic.
+- The key rises a fifth every five levels (C, G, D, A, E, B, F♯, C♯); daily and race levels
+  take their key from the seed.
+- One effect — a dotted-eighth feedback echo through a darkening filter — turns the sparse
+  notes into an ambient bed.
+
+Everything is synthesised with Web Audio oscillators and ZzFX; there is no audio data in
+the zip.
 
 ## Build
 
@@ -101,6 +113,24 @@ wavedash publish <BUILD_ID>
 Wavedash injects a global `Wavedash` object before the game boots, so the SDK is not a file
 we ship: `src/main.js` calls `init()`/`readyForEvents()` only if that global exists, and the
 same build runs unchanged offline and on js13kgames.com.
+
+On Wavedash the same build also reports **achievements** and **leaderboards** through that
+global (every call is guarded, so nothing happens elsewhere):
+
+| Achievement | Unlocked by |
+|---|---|
+| First Gem | clearing any level |
+| One Stroke | clearing a level with a single stroke |
+| Full Spectrum | opening a rainbow gate (all seven colours in one run) |
+| Halfway Over the Rainbow / Prism | 20 / 40 levels cleared |
+| Ink Saver / Not a Drop Wasted | 10 / 40 ink stars |
+| Daily Rainbow | clearing a daily level |
+| Photo Finish | winning a round of an online race |
+
+Leaderboards: `levels` and `stars` (counts, descending) after every level win, and
+`daily-<seed>` (the unicorn's time in milliseconds, ascending) for each daily. The
+achievements are created on the portal by `node tools/wavedash-achievements.mjs` (needs
+`WAVEDASH_TOKEN`); leaderboards are created by the game on first use.
 
 ## Tests
 

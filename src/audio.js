@@ -89,7 +89,7 @@ function tick() {
     if (!e) { tone(note(ch, -2), T, 1.9, 'triangle', .16); for (const k of [0, 2, 4]) tone(note(ch + k, -1), T, 2, 'triangle', .035, k / 2 - 1); }
     if (!(e & 1)) { const m = n ? seq[q % n] : [ch + [0, 2, 4, 2][q & 3], 16]; tone(note(m[0], 0), T, .45, 'sine', .06, m[1] / 16 - 1, 1); }
     if (mode > 1) {
-      at = T; sfx(e & 1 ? 12 : 11); at = 0;
+      at = T; sfx(e & 3 ? 12 : 11); at = 0; // kick on 1 and 3, hat on the other eighths
       if (e & 1) tone(note(ch + [4, 2, 0, 4][q & 3], 1), T, .25, 'sine', .04, 0, 1);
     }
     beat++; nextT += .25;
