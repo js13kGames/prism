@@ -16,12 +16,12 @@ let ws, cb, id, tries = 0, peers = new Map(), nw = [];
 export function join(code, onEvent) {
   leave(); cb = onEvent;
   code = code === 1 ? mkCode() : (code || '').toUpperCase();
-  if (!/^[A-Z]{4}$/.test(code)) return cb('err', 'Enter a 4-letter room code');
+  if (!/^[A-Z]{4}$/.test(code)) return cb('err', 'Enter a 4-letter code');
   if (navigator.onLine === false) return cb('err', 'You are offline'); // no socket: a failed one logs a console error
   id = Math.random().toString(36).slice(2, 6);
   try { ws = new WebSocket(NET.url.replace('{room}', 'prism26-' + code)); } catch (e) { return cb('err', 'Could not connect'); }
   ws.onopen = () => { tries = 0; peers.clear(); nw = []; send(['h']); cb('open', code); };
-  ws.onerror = () => cb('err', 'Connection failed — are you offline?');
+  ws.onerror = () => cb('err', 'Connection failed');
   ws.onclose = () => { cb('close'); if (tries++ < 3) setTimeout(() => ws || join(code, cb), 1500); };
   ws.onmessage = e => {
     const d = e.data;                             // relay system messages: '@' own id, '+' / '-' someone came / went

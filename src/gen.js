@@ -1,10 +1,13 @@
 // Seeded constructive level generator (docs/05) for Daily and online races.
 // Builds the solution first: walks a cursor (cx, cy) rightward placing segments whose reference strokes
-// are known to work, then wraps them in a level string. gen(seed) → [levelString, referenceStrokes].
+// are known to work, then wraps them in a level string. gen(seed, d) → [levelString, referenceStrokes].
+// d = difficulty 0–4 (docs/05): a different layout for the same seed, ink slack 1.4× down to 1.1× (d ≥ 3), and
+// from d 2 no free ink for the colours the route does not need. Race round r uses d = r − 1; the daily's
+// second stage uses 3.
 export const daySeed = () => Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 864e5);
 
-export function gen(seed) {
-  let s = seed | 0;
+export function gen(seed, d = 0) {
+  let s = seed + d * 7919 | 0;
   const rnd = () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const ri = (a, b) => a + (rnd() * (b - a + 1) | 0);
   const y0 = ri(7, 12), sol = [], need = [0, 0, 0, 0, 0, 0, 0];
@@ -18,9 +21,11 @@ export function gen(seed) {
       R(cx, 16, 6, 2, 'W'); for (let x = cx; x < cx + 6; x += 2.2) K(2, [x, cy, Math.min(x + 2.5, cx + 6.3), cy]);
       R(cx + 6, cy, 3, 18 - cy); cx += 9;
     }],
-    [7, 1, () => cy > 8, () => { // step-up: 2 u drop onto a red pad, bounce onto a ledge 4–5 u higher
+    [8, 1, () => cy > 8, () => { // step-up: 2 u drop onto a red pad, bounce onto a ledge 4–5 u higher. The bounce
+      // lands ~5.5 u in, so the ledge is 4 wide: with 3 the next segment's vine foot sat in the landing spot, was
+      // grabbed while still falling, ridden down to its end in a frame and flung the unicorn back (seed 8, d 4).
       const h = ri(4, 5); R(cx, cy + 2, 4, 16 - cy); K(0, [cx + .5, cy + 2, cx + 2.5, cy + 2]);
-      cy -= h; R(cx + 4, cy, 3, 18 - cy); cx += 7;
+      cy -= h; R(cx + 4, cy, 4, 18 - cy); cx += 8;
     }],
     [4, 8, () => cy > 7, () => { // wall-climb: vine up the wall face and over the corner
       const h = ri(3, cy > 9 ? 5 : 3); K(3, [cx - .4, cy, cx - .4, cy - h + .2, cx + .6, cy - h - .4]);
@@ -52,6 +57,6 @@ export function gen(seed) {
     used |= SEG[last][1]; SEG[last][3]();
   }
   R(cx, cy, 32 - cx, 18 - cy);
-  const ink = need.map((v, c) => 'ROYGBIV'[c] + (v ? Math.ceil(v * 1.4) : 3)).join(' ');
+  const ink = need.map((v, c) => 'ROYGBIV'[c] + (v ? Math.ceil(v * (1.4 - Math.min(d, 3) / 10)) : d > 1 ? 0 : 3)).join(' ');
   return [`N Daily|S 1.5 ${y0} 1|G ${Math.min(cx + 2, 30.5)} ${cy - 1}|${geo}|I ${ink}`, sol];
 }

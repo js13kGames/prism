@@ -12,7 +12,7 @@ const Q = s => document.querySelector(s), ui = Q('#ui'), cv = Q('#c'), g = cv.ge
 const rnd = Math.random; // render-side randomness only (particles); the sim never uses it
 let dpr, sc, ox, oy;      // canvas scale: world unit → css px, and letterbox offset
 let scr = 0;              // 0 title, 1 select, 2 game, 3 lobby
-let li = 0, L, strokes = [], run = null, col = 0, cur = null, played = 0, failT = 0, daily = 0;
+let li = 0, L, strokes = [], run = null, col = 0, cur = null, played = 0, failT = 0, daily = 0, gd = 0; // gd: generator difficulty of the open level
 let T = 0, last = 0, acc = 0;
 const A0 = Math.PI * 1.018, AS = Math.PI * .964; // title rainbow: the sweep whose ends meet the bottom edge
 let prog = { done: [], stars: [], snd: 1 };
@@ -38,14 +38,14 @@ const preview = () => createRun(L, strokes)._s.forEach((s, i) => strokes[i]._sup
 function hud() {
   if ((scr != 2 && scr != 3) || !L || over) return;
   if (!run) { preview(); setSeq(strokes.map(s => [s._c, s._p[0]])); } // the canvas is the melody (audio.js)
-  const tag = scr == 3 ? 'Round ' + round + ' · ' + mine() + '–' + theirs() + (ghosts.some(g => g._go) ? ' · rival racing' : '') : '';
+  const tag = scr == 3 ? 'Round ' + round + ' · ' + mine() + '–' + theirs() + (ghosts.some(g => g._go) ? ' · rival racing' : '') : gd > 2 ? 'Stage 2' : '';
   show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, played ? '' : L._hint, snd, tag));
 }
 
-// Load level i, or the daily/online generated level when i == LEVELS.length (from `seed`).
-function loadLevel(i, seed) {
-  li = i; daily = i == LEVELS.length ? seed : 0;
-  L = parseLevel(daily ? gen(seed)[0] : LEVELS[i]);
+// Load level i, or the daily/online generated level when i == LEVELS.length (from `seed`, at difficulty d).
+function loadLevel(i, seed, d) {
+  li = i; daily = i == LEVELS.length ? seed : 0; gd = d | 0;
+  L = parseLevel(daily ? gen(seed, gd)[0] : LEVELS[i]);
   strokes = []; run = null; cur = null; played = 0; over = 0; PARTS.length = 0;
   col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2;
   setKey(((daily ? seed : (i / 5 | 0) * 7) + 5) % 12 - 5); setMusic(1); hud(); // key: a fifth up every five levels (C G D A E B F# C#), the seed's for generated ones
@@ -66,12 +66,12 @@ const goSelect = () => { scr = 1; run = null; setMusic(0); show(selectUI(prog, L
 // L = null: the lobby must forget whatever level was open, because 'no level' is how the peers-changed handler
 // tells 'no round yet' (show the lobby, with Start for the host) from 'round live' (show the HUD). A stale level
 // made the host jump to that level's HUD the moment a guest joined, while the guest waited for Start forever.
-const goLobby = () => { scr = 3; run = null; L = null; show(lobbyUI('Same level, first unicorn to the gem wins', '', 0)); openLobby(); };
+const goLobby = () => { scr = 3; run = null; L = null; show(lobbyUI('First unicorn to the gem wins', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
 const act = {
   go: goSelect, bk: () => scr == 2 && !daily ? goSelect() : goTitle(), on: goLobby,
-  dy: () => loadLevel(LEVELS.length, daySeed()),
+  dy: () => loadLevel(LEVELS.length, daySeed(), 1),
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : title(); },
   lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
   co: () => { let i = 0; while (i < LEVELS.length - 1 && prog.done[i]) i++; loadLevel(i); },
@@ -154,6 +154,8 @@ function onWin() {
     ach('gem'); if (d > 19) ach('half'); if (d > 39) ach('all'); if (s > 9) ach('star10'); if (s > 39) ach('star40'); if (strokes.length == 1) ach('solo');
     lb('levels', d); lb('stars', s);
   }
+  // The daily is two stages: a second, harder generated level (difficulty 3) follows the first, and only that one counts.
+  else if (daily && scr == 2 && gd < 3) { loadLevel(LEVELS.length, daily, 3); show(cardUI('Stage 2', 'Harder!')); setTimeout(() => scr == 2 && hud(), 1400); return; }
   else if (daily && scr == 2) { try { localStorage.prism26_daily = daily; } catch (e) { } ach('daily'); lb('daily', run._t * 1e3 | 0, 1); }
   setMusic(1);
   if (scr == 3) { send(['w', +run._t.toFixed(3), strokes.map(k => [k._c, k._p])]); raceWin(myId(), run._t); return; }
@@ -211,13 +213,13 @@ function openLobby(code, q) {
   ghosts = []; over = 0; round = 0; score = {}; qm = q | 0;
   join(code, (st, data) => {
     if (st == 'err') { room = ''; lobby(data); }
-    else if (st == 'open') { room = data; lobby(qm == 1 ? 'Looking for a rival…' : qm ? 'Rival found! Starting…' : 'Connected. Share the code!'); }
+    else if (st == 'open') { room = data; lobby(qm == 1 ? 'Looking for a rival…' : qm ? 'Starting…' : 'Share the code!'); }
     else if (st == 'n') {
       ghosts = data.map(([i, j]) => ({ ...(ghosts.find(g => g._id == i) || { _id: i, _s: [] }), _jr: j }));
       // Quick match: the senior of the first pair picks a private room, tells the other, and both move there.
       if (qm == 1 && isHost() && ghosts.length) { const c = mkCode(); send(['m', ghosts[0]._id, c]); openLobby(c, 2); }
       else if (qm == 2 && !round) raceStart();
-      else if (over) showRes(); else if (!L) lobby(isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…'); else hud();
+      else if (over) showRes(); else if (!L) lobby(isHost() ? 'Press Start when all are in' : 'Waiting for the host…'); else hud();
     }
     else if (st == 'msg') onMsg(data);
     else if (st == 'close') lobby('Reconnecting…');
@@ -232,21 +234,22 @@ function copyLink() {
   const wd = onWD(), u = wd ? room : location.href.split('#')[0] + '#r=' + room;
   const t = document.createElement('textarea'), done = (wd ? 'Code' : 'Link') + ' copied!';
   let ok = 0;
-  t.value = u; t.style.cssText = 'position:fixed;top:0;opacity:0';
+  t.value = u; t.style.cssText = 'position:fixed;opacity:0';
   document.body.appendChild(t); t.select(); t.setSelectionRange(0, 1e5);
   try { ok = document.execCommand('copy'); } catch (e) { }
   t.remove();
   lobby(ok ? done : u);
 }
-function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = qm = 0; L = null; show(lobbyUI('Same level, first unicorn to the gem wins', '', 0)); }
+function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = qm = 0; L = null; show(lobbyUI('First unicorn to the gem wins', '', 0)); }
 // Host drives the rounds: Start / Next round / Rematch all land here. Round 1 means a fresh match, so the
 // scores reset on both sides from the round number alone (a rejoining player picks up the same rule).
+// Best of five; round r is generated at difficulty r − 1, so the levels get tighter as the match goes on.
 function raceStart() { if (!isHost() || !ghosts.length) return; const s = Math.random() * 1e9 | 0, r = over && over._d ? 1 : round + 1; send(['s', s, r]); startRound(s, r); }
 function startRound(s, r) {
   round = r; rdy = {}; if (r == 1) score = {};
   ghosts.forEach(gh => { gh._s = []; gh._run = gh._go = 0; });
-  loadLevel(LEVELS.length, s);
-  show(cardUI('Round ' + r, r > 1 ? scoreLine() : 'First to two rounds takes the match'));
+  loadLevel(LEVELS.length, s, r - 1);
+  show(cardUI('Round ' + r, r > 1 ? scoreLine() : 'First to three rounds wins'));
   setTimeout(() => { if (scr == 3 && !over) hud(); }, 1400);
 }
 function onMsg([type, id, ...a]) {
@@ -259,7 +262,7 @@ function onMsg([type, id, ...a]) {
 }
 // Rematch: everyone presses it; once the host has seen every rival's 'r' and its own, it starts round 1.
 function ready(id) { if (!over || !over._d) return; rdy[id] = 1; showRes(); if (rdy[myId()] && ghosts.every(g => rdy[g._id])) raceStart(); }
-// Round over. First to the gem takes the round; best of three (or three rounds) takes the match. The loser's
+// Round over. First to the gem takes the round; best of five (or five rounds) takes the match. The loser's
 // own run is dropped so the winner's replay has the stage; the winner's unicorn stays parked on the gem.
 function raceWin(id, t) {
   if (over) return;
@@ -268,8 +271,8 @@ function raceWin(id, t) {
   setMusic(1);                       // the winner's fanfare already fired from their own win event
   if (won) ach('race'); else { run = null; sfx(6); }
   over = {
-    _w: won, _d: mine() > 1 || theirs() > 1 || round > 2,
-    _s: (won ? 'You reached the gem first, in ' : 'Your rival got there first, in ') + t.toFixed(2) + 's',
+    _w: won, _d: mine() > 2 || theirs() > 2 || round > 4,
+    _s: (won ? 'You' : 'Your rival') + ' got there first, in ' + t.toFixed(2) + 's',
   };
   showRes();
 }

@@ -750,3 +750,45 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   under it, then "— or race a friend —", Create room full width and the code + Join row (the
   title's `.n` row width), then Back. Checked at 900×600, 390×844 and 844×390. +54 bytes;
   zip 13,225 at -O2 (87 under the limit).
+
+## 21 Harder late game: best of five, a two-stage daily, one difficulty knob (2026-09-06)
+
+- **Asked for:** harder levels after 30 with longer runs, a daily that takes twice as long,
+  races that get harder and go to best of five, and ten more levels (41–50) with the last
+  ten "super difficult".
+- **The byte wall, measured.** The competition zip had 87 bytes left. Ten unique hand-made
+  levels cost 427 bytes deflated (act 8 removed and re-added: 13,792 → 13,365), hints cost
+  527, the `__prism` test hooks 110. So ten more authored levels cannot ship in the js13k
+  zip without removing something the user said to keep; that decision is theirs (options
+  in the session summary: drop hints, ship act 9 only in the Wavedash build, or generate
+  act 9 from fixed seeds). Nothing of theirs was cut here.
+- **One difficulty knob.** `gen(seed, d)` (docs/05): the seed stream is offset per `d`, ink
+  slack goes 1.4× → 1.1×, and from `d` 2 the colours the route does not need get no ink,
+  so the free orange bridge and the other red herrings are gone. A fourth required colour
+  was tried first and dropped: the 32 u world fits three or four 4–9.5 u segments, so the
+  picker ran out of new-colour segments and broke out with short levels (0 of 120 hard
+  layouts reached four).
+- **Races** are best of five and round `r` uses `d = r − 1` — round 5 has no helpers and
+  1.1× ink. Card: "First to three rounds wins".
+- **Daily** is two stages: `gen(seed, 1)`, then on the win `gen(seed, 3)` behind a
+  "Stage 2 / Harder!" card with a `Stage 2` HUD tag; only stage 2 marks the day done and
+  posts the time. The generator cannot make a single level twice as long — the world is
+  32 u wide, one lane — so the "double" is a second, harder level. A two-lane generator
+  (out along the floor, back along a ceiling lane) was sketched and rejected: the return
+  lane's platforms would wall off the first lane, falls from it are not deaths, and it is
+  well over the byte budget.
+- **Act 8 ink** tightened where a helper budget carried more than twice its solution's
+  need (Cellar I7, Return V3, Ceiling Gap V4, Trampoline O5); zero bytes, every stored
+  solution keeps ≥ 15 % slack for hand jitter.
+- **Generator bug found by the new seeds.** Seed 8 at `d` 4: step-up then spike-run. The
+  bounce lands ~5.5 u into the step-up, and with a 3 u ledge the spike-run's vine foot
+  (`cx − 1`) sat in the landing spot; the unicorn touched the vine while still falling at
+  15 u/s, `grab` continued the travel direction (down), reached the vine's end within the
+  frame and flung it backwards. Template fix, not a special case: the step-up is 8 u wide
+  with a 4 u ledge, so the landing is 1.5 u clear of the next segment. All 200 layouts
+  (40 seeds × 5 difficulties) pass with ink, drawability and no-helper checks.
+- **Tests.** Suite A runs the generator at every difficulty; suite B: `daily-stages`
+  (both stages through the generator's own reference strokes, the done flag only after
+  stage 2), `online-race` and `quick-match` play to three wins.
+- **Bytes.** +64 at first; trimmed non-gameplay wording (connection error, result line,
+  lobby subtitle, three status strings) to land at **13,260** at -O2 (52 under the limit).

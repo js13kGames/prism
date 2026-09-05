@@ -1,13 +1,13 @@
-# SUBMISSION.md — PRISM (js13kGames 2026), version 2.4
+# SUBMISSION.md — PRISM (js13kGames 2026), version 2.5
 
 ## Artefact
 
-- `dist/prism.zip` — **13,225 bytes** (limit 13,312; 87 bytes of headroom).
+- `dist/prism.zip` — **13,260 bytes** (limit 13,312; 52 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
-  `dist/wavedash/index.html` (18,990 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,646 bytes). `unzip -t`: OK.
+  `dist/wavedash/index.html` (19,017 bytes; not size-limited, never submitted to the form).
+- `unzip -l`: exactly one entry, `index.html` (18,688 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -51,6 +51,19 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
    the 13,209-byte build that is `dist/prism.zip`.
+
+## What changed in version 2.5 (DECISIONS.md §21)
+
+- **Races are best of five** and get harder every round: round *r* is generated at
+  difficulty *r* − 1, from 1.4× ink slack with helper colours down to 1.1× and only the
+  colours the route needs.
+- **The daily is two stages**: the day's level, then a second, harder layout from the same
+  seed behind a "Stage 2" card. Only stage 2 marks the day done.
+- **Act 8 asks for cleaner lines**: four helper ink budgets tightened.
+- Generator: a step-up followed by a spike-run could fling the unicorn backwards (the
+  vine foot sat in the bounce's landing spot); the ledge is a unit wider. 200 generated
+  layouts (40 seeds × 5 difficulties) verified.
+- Not done: ten more hand-made levels. They cost ~427 bytes in the zip and 52 remain.
 
 ## What changed in version 2.4 (DECISIONS.md §20)
 

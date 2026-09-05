@@ -17,6 +17,16 @@ mulberry32(seed) → `rnd()` in [0,1). Seed is a 32-bit int. Daily seed =
 `floor((Date.now() - Date.UTC(2026,0,1)) / 864e5)`. Online seed = hash of room code
 XOR host-chosen salt (docs/06). `rndi(a,b)` inclusive ints.
 
+## Difficulty (v2.5)
+
+`gen(seed, d)`, `d` 0–4. The seed stream is offset by `d` (`s = seed + d·7919`), so the
+same seed gives a different layout per difficulty; the ink slack is `1.4 − min(d, 3)/10`
+(1.4× at 0, 1.1× from 3); from `d` 2 the colours the route does not need get **no** ink
+instead of 3 u, so there are no helper bridges or red herrings to lean on. Race round `r`
+uses `d = r − 1` (best of five, so round 5 is the hardest); the daily plays `d` 1 then 3.
+A fourth required colour was tried and dropped: the world is 32 u wide and segments are
+4–9.5 u, so four rarely fit and the picker broke out early with short levels.
+
 ## Algorithm
 
 1. Start with a floor `R 0 14 32 4` and a start pad on a left platform
@@ -38,8 +48,10 @@ stroke touches the world (paint needs support, docs/02).
 
 - **orange bridge** (7 u): 4 u water, orange bridge between the platforms. Requires O 4.
 - **yellow chain** (9 u): 6 u water, three overlapping 2.5 u yellow strokes. Requires Y.
-- **step-up** (7 u): 2 u drop onto a red pad, bounce onto a ledge 4–5 u higher.
-  Requires R 2. `cy -= 4..5`.
+- **step-up** (8 u): 2 u drop onto a red pad, bounce onto a ledge 4–5 u higher.
+  Requires R 2. `cy -= 4..5`. The ledge is 4 u wide: the bounce lands ~5.5 u in, and with a
+  3 u ledge the next segment's vine foot sat in the landing spot and was grabbed mid-fall
+  (DECISIONS.md §21).
 - **wall-climb** (4 u): vine 0.4 u off the wall face and over the corner, h 3–5.
   Requires G. `cy -= h`.
 - **flip-corridor** (7.5 u): ceiling block, violet up, walk over water, violet down.
@@ -57,10 +69,11 @@ and ≥ 3 colours.
 
 ## Validation
 
-`gen.js` is exercised by `sim.test.js`: for seeds 1..40, build the level, run the
-reference strokes (the generator returns them in a second array when called with
-`withSolution=true`), assert win; run empty paint, assert fail. Any seed that fails
-is a bug in a segment template; fix the template, never special-case seeds.
+`gen.js` is exercised by `sim.test.js`: for seeds 1..40 at every difficulty 0..4 (200
+levels), build the level, run the reference strokes (always returned as the second array),
+assert win, ink within budget, drawable, ≥ 3 colours; run empty paint, assert fail; from
+difficulty 2 assert no unneeded colour has ink. Any seed that fails is a bug in a segment
+template; fix the template, never special-case seeds.
 
 ## Daily UI
 

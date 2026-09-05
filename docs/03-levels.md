@@ -112,10 +112,18 @@ Physics facts used below (measured with `tools/lab.mjs`):
     yellow chain over spikes, vine up a ledge, red dab, violet to the ceiling (the gate
     opens with all seven), violet down into the gem room. `R4 O6 Y10 G10 B4 I5 V5`.
 
-## Level 31 — Daily (generated)
+## Level 41 — Daily (generated, two stages)
 
-Seed = days since 2026-01-01. Uses the constructive generator (docs/05). Also the
-online race level with the room's seed.
+Seed = days since 2026-01-01. Uses the constructive generator (docs/05) **twice**: stage 1
+is `gen(seed, 1)`; winning it loads stage 2, `gen(seed, 3)` (a different layout from the
+same seed, ink slack 1.1×, no ink for the colours the route does not need) behind a
+"Stage 2" card, with a `Stage 2` tag in the HUD. Only stage 2 marks the day done
+(`prism26_daily`) and posts the daily time. The online race uses the same generator with
+the room's seed at difficulty round − 1 (docs/06).
+
+Act 8 ink (v2.5): the helper budgets that carried more than twice the slack their solution
+needs were tightened — Cellar I10→I7, Return V4→V3, Ceiling Gap V6→V4, Trampoline O6→O5 —
+so the last act asks for cleaner lines. Every stored solution still fits with ≥ 15 % to spare.
 
 ## Authoring tools (dev only, not shipped)
 

@@ -41,7 +41,7 @@ export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${ext
 // code and count, Copy / Start / Leave. q = waiting in the quick-match queue: no code to share, just Leave.
 export const lobbyUI = (status, code, n, host, q) => `<div class=t><h2>Online race</h2><p>${status}</p>${code && !q ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
 ${code ? `<div>${q ? '' : `<button data-a=cp>Copy ${onWD() ? 'code' : 'link'}</button>`}${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button></div>` :
-    `<button class="b w" data-a=qk>Quick match</button><p class=g>paired with whoever is waiting</p><p>— or race a friend —</p><div class=n><button data-a=cr>Create room</button></div><div class=n><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button></div>`}
+    `<button class="b w" data-a=qk>Quick match</button><p class=g>paired with a stranger</p><p>— or race a friend —</p><div class=n><button data-a=cr>Create room</button></div><div class=n><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button></div>`}
 <button data-a=bk>Back</button></div>`;
 
 // Round start card: the solid menu backdrop, because the rainbow h1 is unreadable over a bright sky.
@@ -50,5 +50,5 @@ export const cardUI = (h, p) => `<div class=t><h1>${h}</h1><p>${p}</p></div>`;
 // Round / match result. The winner's run is replaying behind this one, so it uses the lighter .q overlay.
 // The host moves the match on to the next round; a rematch needs everyone to press Rematch (me / them = who has).
 export const raceUI = (won, sub, score, done, host, me, them) => `<div class="t q"><h2>${done ? won ? 'You take the match!' : 'They take the match.' : won ? 'Round won!' : 'Round lost'}</h2>
-<p>${sub}</p><p><b>${score}</b></p><p>${done ? me ? 'Waiting for your rival…' : them ? 'Your rival wants a rematch!' : '' : host ? '' : 'Waiting for the host…'}</p>
+<p>${sub}</p><p><b>${score}</b></p><p>${done ? me ? 'Waiting for your rival…' : them ? 'Rival wants a rematch!' : '' : host ? '' : 'Waiting for the host…'}</p>
 <div>${done ? me ? '' : '<button class=b data-a=rm>Rematch</button>' : host ? '<button class=b data-a=st>Next round</button>' : ''}<button data-a=bk>Leave</button></div></div>`;

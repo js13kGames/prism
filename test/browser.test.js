@@ -10,6 +10,7 @@ import zlib from 'zlib';
 import { chromium, firefox } from 'playwright';
 import { SOLUTIONS } from './solutions.js';
 import { startRelay } from './relay.js';
+import { gen } from '../src/gen.js';
 
 const args = process.argv.slice(2), QUICK = args.includes('--quick'), ONLY = args[args.indexOf('--only') + 1], REPEAT = +args[args.indexOf('--repeat') + 1] || 1;
 const BROWSERS = args.filter(a => /^(chromium|firefox)$/.test(a));
@@ -237,6 +238,7 @@ async function runBrowser(name) {
       await host.click('[data-a=st]');
       const txt = p => p.$eval('#ui', u => u.textContent);
       for (const p of [page, page2]) await at('round 1 card', p.waitForFunction(() => /Round 1/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 }));
+      if (!/First to three rounds/.test(await txt(host))) throw new Error('round 1 card does not say best of five: ' + await txt(host));
       await shots(host, 'race-round-card');
       for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
       const names = await Promise.all([page, page2].map(p => p.$eval('.h span', s => s.textContent)));
@@ -270,11 +272,17 @@ async function runBrowser(name) {
       if (!/You 0 – 1 Rival/.test(await txt(host))) throw new Error('round 2 card lost the score: ' + await txt(host));
       for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
 
-      // A second win by the same rival decides the match: the card says so and offers a rematch, and the
-      // rematch starts a fresh round 1 with the score back to nil on both sides.
+      // Best of five: a second win only makes it 0–2; the third decides the match, the card says so and offers a
+      // rematch, and the rematch starts a fresh round 1 with the score back to nil on both sides.
+      spy.send(JSON.stringify(['w', 'zzzz', 3.5, [[1, [10, 12, 16, 12]]]]));
+      for (const p of [page, page2]) await at('round 2 result', p.waitForFunction(() => /Round lost/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      if (/take the match/.test(await txt(host))) throw new Error('two wins decided a best-of-five match');
+      await host.click('[data-a=st]'); // Next round
+      for (const p of [page, page2]) await at('round 3 card', p.waitForFunction(() => /Round 3/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
+      for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
       spy.send(JSON.stringify(['w', 'zzzz', 3.5, [[1, [10, 12, 16, 12]]]]));
       for (const p of [page, page2]) await at('match result', p.waitForFunction(() => /take the match/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
-      if (!/You 0 – 2 Rival/.test(await txt(host))) throw new Error('match card lost the score: ' + await txt(host));
+      if (!/You 0 – 3 Rival/.test(await txt(host))) throw new Error('match card lost the score: ' + await txt(host));
       for (const p of [page, page2]) if (!await p.$('[data-a=rm]')) throw new Error('not everyone was offered a rematch: ' + await txt(p));
       await shots(host, 'race-match-end');
       // A rematch needs everyone: the guest's press only tells the others; nothing starts until the host and
@@ -337,15 +345,17 @@ async function runBrowser(name) {
       // The pair's match runs as usual: the senior of the two hosts, and the rematch needs both.
       await c.click('[data-a=lv0]');
       const spyWin = async () => { const s = new WebSocket(`ws://localhost:${relay.port}/prism26-${rooms[0]}`); await new Promise(r => s.onopen = r); return s; };
-      const s = await spyWin();
-      s.send(JSON.stringify(['w', 'zzzz', 2, [[1, [10, 12, 16, 12]]]]));
+      const s = await spyWin(), win = () => s.send(JSON.stringify(['w', 'zzzz', 2, [[1, [10, 12, 16, 12]]]]));
+      win();
       for (const p of [a, b]) await wait(p, /Round lost/);
       const host = await a.$('[data-a=st]') ? a : b;
-      await host.click('[data-a=st]');
-      for (const p of [a, b]) await wait(p, /Round 2/);
-      for (const p of [a, b]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
-      s.send(JSON.stringify(['w', 'zzzz', 2, [[1, [10, 12, 16, 12]]]]));
-      for (const p of [a, b]) await wait(p, /take the match/);
+      for (const r of [2, 3]) { // best of five: the third win takes it
+        await host.click('[data-a=st]');
+        for (const p of [a, b]) await wait(p, new RegExp('Round ' + r));
+        for (const p of [a, b]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+        win();
+        for (const p of [a, b]) await wait(p, r < 3 ? /Round lost/ : /take the match/);
+      }
       await shots(a, 'quick-match-end');
       for (const p of [a, b]) await p.click('[data-a=rm]');
       s.send(JSON.stringify(['r', 'zzzz']));
@@ -353,6 +363,25 @@ async function runBrowser(name) {
       s.close();
     } finally { relay.close(); }
   }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
+
+  // The daily is two stages: the generated level at difficulty 1, then a second at difficulty 3 behind a "Stage 2"
+  // card, and only the second one marks the day done. The solutions are the generator's own reference strokes.
+  await test('daily-stages', async page => {
+    await boot(page);
+    const seed = Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 864e5), name = () => page.$eval('.h span', s => s.textContent);
+    await page.click('[data-a=dy]'); await page.waitForSelector('[data-a=p]');
+    if (/Stage 2/.test(await name())) throw new Error('the daily opened on stage 2');
+    await page.evaluate(s => __prism.setStrokes(s), gen(seed, 1)[1]); await page.click('[data-a=p]');
+    await page.waitForFunction(() => /Stage 2/.test(document.querySelector('#ui').textContent), null, { timeout: 30000 });
+    await shots(page, 'daily-stage2-card');
+    await page.waitForSelector('[data-a=p]', { timeout: 5000 });
+    if (!/Stage 2/.test(await name())) throw new Error('stage 2 HUD has no Stage 2 tag: ' + await name());
+    if (await page.evaluate(() => localStorage.prism26_daily) == String(seed)) throw new Error('the daily was marked done after stage 1');
+    await page.evaluate(s => __prism.setStrokes(s), gen(seed, 3)[1]); await page.click('[data-a=p]');
+    await page.waitForFunction(() => /Daily done/.test(document.querySelector('#ui').textContent), null, { timeout: 30000 });
+    if (await page.evaluate(() => localStorage.prism26_daily) != String(seed)) throw new Error('the daily was not marked done after stage 2');
+    await shots(page, 'daily-done');
+  });
 
   await test('resize', async page => {
     await boot(page); await openLevel(page, 0);

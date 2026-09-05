@@ -24,8 +24,9 @@ edges. All the agency is in the paint.
 4. **Rewind** at any time to go back to drawing.
 5. A **★** is earned when you use at most 60 % of the level's total ink.
 
-40 hand-made levels in eight acts teach the colours one at a time, then combine them. **Daily** is a new generated level
-every day (same for everyone). **Online** is a best-of-three race: everyone in a room gets
+40 hand-made levels in eight acts teach the colours one at a time, then combine them. **Daily** is two generated
+levels every day (same for everyone), the second one tighter. **Online** is a best-of-five race with the levels
+getting harder each round: everyone in a room gets
 the same generated level and draws at the same time, and the first unicorn to reach the
 gem wins the round. Nobody sees anybody else's paint while the round is live — copying is
 the whole reason that would be a bad idea — but the winner's run replays for everyone on

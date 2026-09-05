@@ -38,8 +38,10 @@ fetched, and every failure degrades to a lobby status message.
 Two players (accept up to 4; everyone races) get the same generated level (docs/05)
 — or, if the generator was cut, level `1 + seed % 20`. Everyone draws at the same time
 and presses Play independently, as often as they like. First unicorn to reach the gem
-wins the round. The host starts the next round with a new seed; first to two round wins
-(or three rounds) takes the match. A **rematch needs everyone**: each player presses
+wins the round. The host starts the next round with a new seed; **best of five**: first
+to three round wins (or five rounds) takes the match, and round `r` is generated at
+difficulty `r − 1` (docs/05), so the levels tighten as the match goes on. A **rematch
+needs everyone**: each player presses
 Rematch (the others see "Your rival wants a rematch!"), and once the host has seen every
 rival's press and its own it starts round 1, which resets the scores.
 

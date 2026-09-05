@@ -105,18 +105,24 @@ if (!only.length) {
 // Generator (optional module)
 if (!only.length) try {
   const { gen } = await import('../src/gen.js');
-  let gfails = 0;
-  for (let seed = 1; seed <= 40; seed++) {
-    const [str, sol] = gen(seed, 1), L = parseLevel(str);
+  // Every difficulty 0–4 (race rounds 1–5; the daily uses 1 then 3): the reference strokes must win, fit the
+  // (tighter) ink, be drawable, need ≥ 3 colours, and empty paint must fail; from difficulty 2 no helper colour has ink.
+  let gfails = 0, helpers = 0;
+  for (let d = 0; d <= 4; d++) for (let seed = 1; seed <= 40; seed++) {
+    const [str, sol] = gen(seed, d), L = parseLevel(str);
     const r = play(L, sol), e = play(L, []);
-    const cols = new Set(sol.map(s => s[0]));
+    const cols = new Set(sol.map(s => s[0])), use = [0, 0, 0, 0, 0, 0, 0];
+    for (const [c, p] of sol) use[c] += strokeLen(p);
+    const inkOk = use.every((v, c) => v <= L._ink[c] + 1e-9);
     const inWorld = L._rects.every(q => q._x >= 0 && q._y >= 0 && q._x + q._w <= 32 && q._y + q._h <= 18);
-    const bad = r._state != 1 || e._state != 2 || cols.size < 3 || !inWorld || !drawable(L, sol);
-    if (bad) { gfails++; console.log(`  gen seed ${seed}: win=${r._state == 1} (${r._t.toFixed(2)}s) emptyFails=${e._state == 2} colours=${cols.size} inWorld=${inWorld} drawable=${drawable(L, sol)}\n    ${str}`); }
-    else if (TRACE) console.log(`  gen seed ${seed}: win ${r._t.toFixed(2)}s, ${cols.size} colours, ${str.length} chars`);
+    const bad = r._state != 1 || e._state != 2 || cols.size < 3 || !inWorld || !inkOk || !drawable(L, sol);
+    if (d > 1) helpers += L._ink.filter((v, c) => v && !cols.has(c)).length;
+    if (bad) { gfails++; console.log(`  gen seed ${seed} d${d}: win=${r._state == 1} (${r._t.toFixed(2)}s) emptyFails=${e._state == 2} colours=${cols.size} inWorld=${inWorld} ink=${inkOk} drawable=${drawable(L, sol)}\n    ${str}`); }
+    else if (TRACE) console.log(`  gen seed ${seed} d${d}: win ${r._t.toFixed(2)}s, ${cols.size} colours, ${str.length} chars`);
   }
   ok(!gfails, `${gfails} generator seeds failed`);
-  console.log(`generator: 40 seeds${gfails ? ', ' + gfails + ' failed' : ' ok'}`);
+  ok(!helpers, `${helpers} helper colours still have ink at difficulty ≥ 2`);
+  console.log(`generator: 40 seeds × 5 difficulties${gfails ? ', ' + gfails + ' failed' : ' ok'}`);
 } catch (e) { if (e.code != 'ERR_MODULE_NOT_FOUND') throw e; console.log('generator: not present'); }
 
 console.log('\n' + summary.join('\n'));
