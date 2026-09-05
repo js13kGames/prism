@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "build": "node build.js",
+    "build:wavedash": "node build.js --wavedash",
+    "release": "node build.js -O2 && node build.js -O2 --wavedash",
     "test": "node test/sim.test.js && node test/browser.test.js",
     "test:sim": "node test/sim.test.js",
     "test:browser": "node test/browser.test.js",

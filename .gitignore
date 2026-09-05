@@ -6,3 +6,4 @@ test-results
 tools/discover*.js
 .gstack/
 dist/wavedash/
+dist/size-wavedash.txt

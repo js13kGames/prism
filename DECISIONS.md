@@ -613,3 +613,47 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   in the replay). It takes an alpha parameter now, the ghost unicorn is faded too, and the win
   message carries the exact points instead of one-decimal roundings, so the replay is the run
   that won and not a near miss of it.
+
+## 18 Back button lost on a landscape phone; one source tree, two builds (2026-09-05)
+
+- **"There is no Back button on the level select on mobile."** There is one in the markup;
+  it was off screen. Every menu is a `.t` overlay — a flex column with
+  `justify-content:center` inside `inset:0`, on a page with `overflow:hidden` and
+  `touch-action:none`. The level grid is eight act rows (44 px dots + margins = 416 px) plus a
+  heading and the Back button, ~550 px in all; centred in a 390 px-tall landscape phone it
+  overflowed *both* ends, so the heading and the Back button were clipped and nothing could
+  scroll them in (measured: Back at y = 421–467 in an 844×390 viewport; on 390×844 it fit,
+  and on 360×640 it fit with 20 px to spare, which is one browser toolbar away from the same
+  bug). Fix, all CSS: the overlay gets `overflow:auto`, and centring is done by auto margins
+  (`h1`/`h2` `margin-top:auto`, `.t>:last-child` `margin-bottom:auto`) instead of
+  `justify-content`, because auto margins collapse to zero when the content overflows,
+  whereas `justify-content:center` keeps centring and clips. `justify-content:safe center`
+  is the modern answer but its Safari support is recent, and the Mobile category is judged on
+  phones. The title's sound button (absolutely positioned) moved in front of the `h1` so the
+  progress line is the overlay's last child. `touch-action:none` moved from `body` to the
+  canvas (`#c`), and `#ui` gets `pan-y`: Chrome and Firefox stop walking ancestors at the
+  scroll container, so the old rule would not have blocked scrolling there (verified with
+  dispatched touch events in headless Chromium), but WebKit intersects an ancestor's `none`
+  into every descendant, and iOS would have kept the list frozen. Drawing on the canvas is
+  unchanged. The mobile-landscape test now opens the grid, asserts the overlay scrolls, that
+  Back can be scrolled into the viewport, wheels the list, and presses Back. Cost: +55 bytes
+  of CSS before compression.
+- **Two builds.** The Wavedash category has been confirmed to accept a build that differs
+  from the competition zip and is not held to 13,312 bytes, so the platform code no longer
+  rides in the competition entry. `src/wavedash.js` now holds everything platform-specific
+  (the `Wavedash` global guard, `onWD`, achievements, leaderboards, the SDK init call).
+  `node build.js` (the competition build) substitutes a one-line stub for that module —
+  `const onWD=()=>0,ach=()=>0,lb=()=>0` — and terser inlines and drops every call (the only
+  arguments are literals) and folds `onWD() ? 'code' : 'link'` to the link text, so the zip
+  carries not one byte of it (the build throws if the string `Wavedash` survives
+  minification, and `tools/checks.mjs` checks the same). `node build.js --wavedash` builds the
+  real module in and writes only `dist/wavedash/index.html` — the `upload_dir` in
+  `wavedash.toml` must hold that file alone — with no zip and no size gate; it prints what
+  the file would zip to for the record. `npm run release` runs both at -O2. Same source,
+  same levels, same relay; the dev server always runs the real module (a no-op without the
+  global). The suite serves the Wavedash build under `/wd/`: the platform tests run against
+  it and are skipped, not failed, when it has not been built; and the competition build is
+  now tested with the SDK global injected, where it must *not* call `init()` and must keep
+  saying Copy link. Bytes: the competition zip drops from 13,209 to 13,003 at -O1 before
+  the -O2 search (the stubbed module is 22 bytes deflated on its own, but removing it also
+  removes a promise chain and the `self.Wavedash` reads from ui.js and main.js).

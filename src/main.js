@@ -2,7 +2,8 @@
 import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W, H, R, min, max, hypot } from './sim.js';
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
-import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI, onWD } from './ui.js';
+import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
+import { onWD, ach, lb } from './wavedash.js';
 import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic, setKey, setSeq } from './audio.js';
 import { join, send, leave, myId, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
@@ -264,15 +265,6 @@ function raceWin(id, t) {
 }
 
 window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get strokes() { return strokes; } };
-// Wavedash: the platform injects a global `Wavedash` before the game boots, so nothing is loaded from outside
-// the zip; everywhere else (js13k, offline, file://) every wd() call is a no-op. Achievements are created on the
-// portal by id (tools/wavedash-achievements.sh); leaderboards are created on first use. Nothing here may throw
-// or leave a rejected promise behind — either would be a console error, which is a release blocker.
-const wd = f => { try { const W = self.Wavedash; if (W) return f(W); } catch (e) { } };
-const ach = id => wd(W => W.setAchievement(id, 1));
-// lb(name, value, isTime): sort 0 = ascending (times) / 1 = descending; display 2 = milliseconds / 0 = numeric.
-const lb = (name, v, t) => wd(W => W.getOrCreateLeaderboard(name, t ? 0 : 1, t ? 2 : 0).then(r => W.uploadLeaderboardScore(r.data.id, v, 1)).catch(e => { }));
-wd(W => { if (!W.initialized) { W.init(); if (W.readyForEvents) W.readyForEvents(); } });
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);

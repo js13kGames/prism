@@ -83,9 +83,17 @@ the zip.
 ```bash
 npm install                      # terser, roadroller, @gfx/zopfli, playwright (dev only)
 npx playwright install chromium firefox
-node build.js                    # quick build (roadroller -O1)
-node build.js -O2                # release build used for the submission zip
+node build.js                    # js13k competition build (roadroller -O1): dist/index.html + dist/prism.zip
+node build.js -O2                # the same, with the slow roadroller search — this is the submission zip
+node build.js -O2 --wavedash     # the Wavedash build: dist/wavedash/index.html (see below)
+npm run release                  # both release builds, one after the other
 ```
+
+There are **two builds from one source tree**. The competition build is what goes in
+`dist/prism.zip` and is held to the 13,312-byte limit; in it, `src/wavedash.js` is replaced
+by a stub whose exports are no-ops, which terser folds away, so the zip carries no platform
+code at all. The Wavedash build includes that module (SDK init, achievements, leaderboards)
+and is not size-limited — it only ever goes to Wavedash, never to the competition form.
 
 `build.js` concatenates `src/` in dependency order (stripping ES-module syntax), minifies
 with terser (property mangling on `_`-prefixed keys), packs with Roadroller, inlines the
@@ -99,23 +107,24 @@ access is the optional Online mode, which opens a plain WebSocket to the js13kGa
 
 ### Publishing on Wavedash
 
-`build.js` also writes `dist/wavedash/index.html` — the same single file that ships in the
-zip, alone in its own folder, which is what `upload_dir` in [wavedash.toml](wavedash.toml)
-points at. Put the game ID from the Developer Portal in that file, then:
+`node build.js --wavedash` writes `dist/wavedash/index.html` — the Wavedash build, alone in
+its own folder, which is what `upload_dir` in [wavedash.toml](wavedash.toml) points at. It is
+the competition game plus the platform integration in `src/wavedash.js`; nothing else differs.
+Put the game ID from the Developer Portal in that file, then:
 
 ```bash
 wavedash auth login
-node build.js -O2
+node build.js -O2 --wavedash
 wavedash build push -m "js13k 2026 entry"
 wavedash publish <BUILD_ID>
 ```
 
 Wavedash injects a global `Wavedash` object before the game boots, so the SDK is not a file
-we ship: `src/main.js` calls `init()`/`readyForEvents()` only if that global exists, and the
-same build runs unchanged offline and on js13kgames.com.
+we ship: `src/wavedash.js` calls `init()`/`readyForEvents()` only if that global exists, and
+the Wavedash build also runs unchanged offline. The competition build ignores that global
+entirely (the suite injects it into both builds and checks that only the Wavedash one reacts).
 
-On Wavedash the same build also reports **achievements** and **leaderboards** through that
-global (every call is guarded, so nothing happens elsewhere):
+The Wavedash build reports **achievements** and **leaderboards** through that global:
 
 | Achievement | Unlocked by |
 |---|---|

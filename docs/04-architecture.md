@@ -13,13 +13,16 @@ src/
   audio.js            ZzFX-mini + sound table
   net.js              relay client (docs/06), optional
   ui.js               HTML overlay screens (title/select/win/lobby) as template strings
+  wavedash.js         Wavedash platform only (SDK init, achievements, leaderboards); the competition
+                      build swaps in a no-op stub, `node build.js --wavedash` includes it
 tools/play.html       level authoring page (dev only)
 test/
   sim.test.js         Node: solutions, empty-paint fails, determinism, ink checks
   browser.test.js     Playwright: chromium + firefox
   solutions.js        stored solutions per level
 build.js              bundle → minify → roadroller → inline → zip → size gate
-dist/                 index.html, prism.zip (gitignored except in releases)
+                      (--wavedash: the second build, dist/wavedash/index.html, no zip, no gate)
+dist/                 index.html, prism.zip (gitignored except in releases); wavedash/index.html
 README.md  SUBMISSION.md  DECISIONS.md  CLAUDE.md  docs/
 ```
 

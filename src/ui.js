@@ -1,20 +1,16 @@
 // HTML screens as template strings. Buttons carry data-a (action) and data-v (value); main.js dispatches.
 import { COLS } from './sim.js';
 import { ACT, AC } from './levels.js';
-
-// True on Wavedash, which injects this global before the game boots. Only that platform needs the room code
-// instead of a link: js13kgames also runs the game in an iframe, but there the frame's URL is a real page.
-export const onWD = () => !!self.Wavedash;
+import { onWD } from './wavedash.js';
 
 export const GLYPH = '↑⇒✶⋮❋⇢⟳';
 
 // Title. The backdrop behind it is animated (main.js), so this screen uses the .v vignette rather than the
 // flat wash the menus use — otherwise the sky and the rainbow read as grey.
-export const titleUI = (snd, done, stars, n, dd) => `<div class="t v"><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
+export const titleUI = (snd, done, stars, n, dd) => `<div class="t v"><button class=z data-a=sn>${snd ? '🔊' : '🔇'}</button><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
 <button class="b w" data-a=co>${done ? 'Continue' : 'Play'}</button>
 <div class=n><button data-a=go>Levels</button><button data-a=on>Online</button><button data-a=dy>Daily${dd ? ' ✓' : ''}</button></div>
-<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p>
-<button class=z data-a=sn>${snd ? '🔊' : '🔇'}</button></div>`;
+<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p></div>`;
 
 // Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}.
 export function selectUI(prog, n) {

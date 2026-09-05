@@ -1,4 +1,5 @@
-// Suite B — Playwright, chromium + firefox, against the UNZIPPED dist/prism.zip.
+// Suite B — Playwright, chromium + firefox, against the UNZIPPED dist/prism.zip (the js13k competition build),
+// plus dist/wavedash/index.html (the Wavedash build, `node build.js --wavedash`) for the platform tests.
 // Usage: node test/browser.test.js [chromium|firefox] [--quick] [--only <test>] [--repeat N]
 //   quick: skip the all-levels run; only: run one named test; repeat: run the selection N times
 import fs from 'fs';
@@ -25,8 +26,18 @@ const html = method == 8 ? zlib.inflateRawSync(body) : body;
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-'));
 fs.writeFileSync(path.join(dir, 'index.html'), html);
 // A host page that embeds the game, the way a platform (Wavedash) serves it.
-fs.writeFileSync(path.join(dir, 'frame.html'), '<!doctype html><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style><iframe src=index.html></iframe>');
+const FRAME = '<!doctype html><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style><iframe src=index.html></iframe>';
+fs.writeFileSync(path.join(dir, 'frame.html'), FRAME);
 console.log(`unzipped ${fname} (${html.length} bytes, method ${method}) to ${dir}`);
+// The Wavedash build (node build.js --wavedash) is a separate file with the platform code in; it is served
+// under /wd/ so the platform tests can run against it. Without it those tests are skipped, not failed.
+const WDHTML = fs.existsSync('dist/wavedash/index.html') ? fs.readFileSync('dist/wavedash/index.html') : null;
+if (WDHTML) {
+  fs.mkdirSync(path.join(dir, 'wd'));
+  fs.writeFileSync(path.join(dir, 'wd', 'index.html'), WDHTML);
+  fs.writeFileSync(path.join(dir, 'wd', 'frame.html'), FRAME);
+  console.log(`Wavedash build: dist/wavedash/index.html (${WDHTML.length} bytes) served at /wd/`);
+} else console.log('no dist/wavedash/index.html — platform tests will be skipped (node build.js --wavedash)');
 
 // --- static server ---
 const srv = http.createServer((q, s) => {
@@ -176,7 +187,18 @@ async function runBrowser(name) {
   }, { viewport: { width: 390, height: 844 }, ...mobile });
 
   await test('mobile-landscape', async page => {
-    await boot(page); await page.evaluate(() => __prism.load(1)); await page.waitForSelector('[data-a=p]');
+    await boot(page);
+    // The level grid (8 act rows) is taller than a landscape phone. The menu has to scroll so that its Back
+    // button can be reached, instead of centring and losing both ends off screen (the original bug).
+    await page.click('[data-a=go]'); await page.waitForSelector('.a');
+    const t = await page.evaluate(() => { const b = document.querySelector('.t [data-a=bk]'), t = document.querySelector('.t'); const r0 = b.getBoundingClientRect(); b.scrollIntoView(); const r = b.getBoundingClientRect(); return { before: r0.bottom, after: [r.top, r.bottom], scrollable: t.scrollHeight > t.clientHeight, ih: innerHeight }; });
+    if (!t.scrollable) throw new Error('level grid overlay is not scrollable in landscape: ' + JSON.stringify(t));
+    if (t.after[0] < 0 || t.after[1] > t.ih) throw new Error('level grid Back button unreachable in landscape: ' + JSON.stringify(t));
+    await page.mouse.wheel(0, 200); await sleep(200);
+    if (!await page.evaluate(() => document.querySelector('.t').scrollTop)) throw new Error('level grid did not scroll');
+    await shots(page, 'mobile-landscape-select');
+    await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=go]');
+    await page.evaluate(() => __prism.load(1)); await page.waitForSelector('[data-a=p]');
     await page.evaluate(s => __prism.setStrokes(s), SOLUTIONS[1]);
     await page.click('[data-a=p]'); await waitWin(page);
   }, { viewport: { width: 844, height: 390 }, ...mobile });
@@ -285,9 +307,11 @@ async function runBrowser(name) {
     await boot(page); await page.click('[data-a=sn]'); await page.click('[data-a=sn]'); await page.click('[data-a=go]');
   });
 
-  // The mute button has to look muted: both the title and the in-game HUD swap their glyph on click.
   // Embedded in an iframe, with and without the Wavedash SDK global. Only on Wavedash is the frame's own
   // URL unshareable, so only there does the button copy the bare room code; js13kgames frames it too.
+  // Three cases: the competition build framed plainly (Copy link); the competition build with the SDK global
+  // injected, which must ignore it entirely — no init call, still Copy link — because that build carries no
+  // platform code; and the Wavedash build with the global (init called, Copy code).
   await test('platform-copy', async (page, ctx) => {
     const relay = await startRelay();
     const openRoom = async p => {
@@ -310,35 +334,48 @@ async function runBrowser(name) {
         if (got != URL + 'index.html#r=' + code) throw new Error(`clipboard holds "${got}", expected the frame url + #r=${code}`);
       }
 
+      const sdk = () => { self.Wavedash = { initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { } }; };
       const page2 = await ctx.newPage();
       page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
-      await page2.addInitScript(() => { self.Wavedash = { initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { } }; });
+      await page2.addInitScript(sdk);
       await page2.goto(URL + 'frame.html');
-      const [fr2, code2] = await openRoom(page2);
-      if (!await fr2.evaluate(() => self.Wavedash.initialized)) throw new Error('the game did not call Wavedash.init()');
+      const [fr2] = await openRoom(page2);
+      if (await fr2.evaluate(() => self.Wavedash.initialized)) throw new Error('the competition build called Wavedash.init() — platform code leaked into the js13k zip');
       label = await fr2.$eval('[data-a=cp]', b => b.textContent);
+      if (label != 'Copy link') throw new Error('competition build with the SDK global says "' + label + '", expected Copy link (no platform code)');
+
+      if (!WDHTML) { console.log('    (no Wavedash build: Copy code case skipped)'); return; }
+      const page3 = await ctx.newPage();
+      page3.on('pageerror', e => { throw new Error('page3 error: ' + e.message); });
+      await page3.addInitScript(sdk);
+      await page3.goto(URL + 'wd/frame.html');
+      const [fr3, code3] = await openRoom(page3);
+      if (!await fr3.evaluate(() => self.Wavedash.initialized)) throw new Error('the Wavedash build did not call Wavedash.init()');
+      label = await fr3.$eval('[data-a=cp]', b => b.textContent);
       if (label != 'Copy code') throw new Error('on Wavedash the button says "' + label + '", expected Copy code');
-      await fr2.click('[data-a=cp]');
-      await fr2.waitForFunction(() => /Code copied/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      await fr3.click('[data-a=cp]');
+      await fr3.waitForFunction(() => /Code copied/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
       if (name == 'chromium') {
-        const got = await fr2.evaluate(() => navigator.clipboard.readText());
-        if (got != code2) throw new Error(`clipboard holds "${got}", expected the bare code ${code2}`);
+        const got = await fr3.evaluate(() => navigator.clipboard.readText());
+        if (got != code3) throw new Error(`clipboard holds "${got}", expected the bare code ${code3}`);
       }
-      await shots(page2, 'wavedash-lobby');
+      await shots(page3, 'wavedash-lobby');
     } finally { relay.close(); }
   }, name == 'chromium' ? { permissions: ['clipboard-read', 'clipboard-write'] } : {},
     route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   // On Wavedash, a win reports achievements and leaderboard scores through the injected SDK. The mock records
   // every call; the ids must match tools/wavedash-achievements.mjs. Nothing may throw or reject (console errors).
+  // This runs against the Wavedash build only (the competition build has none of this code).
   await test('platform-achievements', async page => {
+    if (!WDHTML) { console.log('    (no Wavedash build: skipped)'); return; }
     await page.addInitScript(() => {
       const calls = [], rec = n => (...a) => { calls.push([n, ...a]); return true; };
       self.Wavedash = { calls, initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { }, setAchievement: rec('ach'),
         getOrCreateLeaderboard: (...a) => { calls.push(['lb', ...a]); return Promise.resolve({ success: true, data: { id: 'id_' + a[0] } }); },
         uploadLeaderboardScore: (...a) => { calls.push(['score', ...a]); return Promise.resolve({ success: true }); } };
     });
-    await page.goto(URL + 'frame.html');
+    await page.goto(URL + 'wd/frame.html');
     const fr = await (await page.waitForSelector('iframe')).contentFrame();
     await fr.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 10000 });
     await fr.evaluate(() => __prism.load(0)); await fr.waitForSelector('[data-a=p]');

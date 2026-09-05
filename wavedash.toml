@@ -4,11 +4,12 @@
 #
 # Authenticate with your own API key, which never belongs in this file or the repo:
 #   $env:WAVEDASH_TOKEN = "wd_..."          # PowerShell, this session only
-#   node build.js -O2                       # writes dist/wavedash/index.html
+#   node build.js -O2 --wavedash            # writes dist/wavedash/index.html (the Wavedash build, not the js13k zip)
 #   wavedash build push -m "js13k 2026 entry"
 #   wavedash publish <BUILD_ID>
 game_id = "j97ddpqsg8v73xn49hp7pqfx0x8dr30z"
 
-# The exact file that ships in prism.zip, alone in its own folder so nothing else is uploaded.
+# The Wavedash build (achievements, leaderboards, SDK init — code the js13k competition zip does not carry),
+# alone in its own folder so nothing else is uploaded.
 upload_dir = "./dist/wavedash"
 entrypoint = "index.html"

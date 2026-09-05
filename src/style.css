@@ -1,10 +1,13 @@
-html,body{margin:0;height:100%;overflow:hidden;background:#241d4a;font-family:system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
-#c{position:fixed}
-#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+html,body{margin:0;height:100%;overflow:hidden;background:#241d4a;font-family:system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+/* touch-action lives on the canvas and the overlay, not on body: WebKit intersects an ancestor's `none` into every descendant, which would stop the menus (pan-y) from scrolling on iOS. */
+#c{position:fixed;touch-action:none}
+#ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;touch-action:pan-y}
 #ui>*{pointer-events:auto}
-.t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#1a153399}
-h1{font-size:min(18vw,13vh,90px);margin:0;letter-spacing:.12em;background:linear-gradient(90deg,#ff5d6c,#ffa64d,#ffe14d,#5fd68a,#5db8ff,#7b6cff,#d977ff);-webkit-background-clip:text;background-clip:text;color:#0000;filter:drop-shadow(0 3px 7px #1a1533cc)}
-h2{margin:0 0 8px;font-size:32px}
+.t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;overflow:auto;background:#1a153399}
+/* Centre via auto margins, not justify-content: a menu taller than a landscape phone (the 8-row level grid) then scrolls instead of losing its heading and Back button off both ends. */
+.t>:last-child{margin-bottom:auto}
+h1{font-size:min(18vw,13vh,90px);margin:auto 0 0;letter-spacing:.12em;background:linear-gradient(90deg,#ff5d6c,#ffa64d,#ffe14d,#5fd68a,#5db8ff,#7b6cff,#d977ff);-webkit-background-clip:text;background-clip:text;color:#0000;filter:drop-shadow(0 3px 7px #1a1533cc)}
+h2{margin:auto 0 8px;font-size:32px}
 p{margin:4px 12px;opacity:.85}
 button{font:inherit;border:0;border-radius:12px;padding:0 16px;margin:4px;background:#ffffff2e;color:#fff;min-width:44px;min-height:46px;cursor:pointer;font-size:17px}
 button:active{background:#fff5}
