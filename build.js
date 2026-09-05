@@ -19,7 +19,7 @@ const ORDER = ['sim', 'levels', 'gen', 'audio', 'render', 'net', 'wavedash', 'ui
 const read = f => fs.readFileSync(f, 'utf8');
 // The competition build's stand-in for src/wavedash.js: the same exports, all no-ops, which terser inlines
 // and drops (a call whose only arguments are literals has no side effects), so no platform code remains.
-const STUB = 'const onWD=()=>0,ach=()=>0,lb=()=>0;\n';
+const STUB = 'const onWD=()=>0,ach=()=>0,lb=()=>0,cloudLoad=()=>0,cloudSave=()=>0,wdTitle=()=>0,pres=()=>0;\n';
 
 // 1. Concatenate modules, stripping ES module syntax (no name collisions by construction).
 const strip = src => src.replace(/^import [^\n]*\n/gm, '').replace(/^export (default )?/gm, '');

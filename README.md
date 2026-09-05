@@ -127,6 +127,14 @@ we ship: `src/wavedash.js` calls `init()`/`readyForEvents()` only if that global
 the Wavedash build also runs unchanged offline. The competition build ignores that global
 entirely (the suite injects it into both builds and checks that only the Wavedash one reacts).
 
+The Wavedash build also keeps a **cloud save** (`prism/progress.json` in the player's Wavedash
+storage: levels done and stars, merged with the device's own progress on boot, uploaded after
+every save), shows who is signed in on the title ("Playing as …"), and updates the player's
+**presence** for their friends (which level, the daily, or an online race). All of it lives
+in `src/wavedash.js`; the SDK type-checks every argument, so booleans must be real booleans —
+the `1` that used to stand in for `true` silently lost every achievement and score
+(DECISIONS.md §22).
+
 The Wavedash build reports **achievements** and **leaderboards** through that global:
 
 | Achievement | Unlocked by |

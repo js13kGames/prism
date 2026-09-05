@@ -454,30 +454,56 @@ async function runBrowser(name) {
   }, name == 'chromium' ? { permissions: ['clipboard-read', 'clipboard-write'] } : {},
     route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
-  // On Wavedash, a win reports achievements and leaderboard scores through the injected SDK. The mock records
-  // every call; the ids must match tools/wavedash-achievements.mjs. Nothing may throw or reject (console errors).
-  // This runs against the Wavedash build only (the competition build has none of this code).
+  // On Wavedash, the injected SDK carries the player's identity, their cloud save, and a win's achievements and
+  // leaderboard scores. The mock behaves like @wvdsh/sdk-js where it bit us: it throws on a non-boolean where a
+  // boolean is required (the number 1 silently lost every achievement and score for a week), and setAchievement
+  // returns false the first time, as the real SDK does until its stats have loaded. The ids must match
+  // tools/wavedash-achievements.mjs. Nothing may throw or reject (console errors). Wavedash build only.
   await test('platform-achievements', async page => {
     if (!WDHTML) { console.log('    (no Wavedash build: skipped)'); return; }
     await page.addInitScript(() => {
-      const calls = [], rec = n => (...a) => { calls.push([n, ...a]); return true; };
-      self.Wavedash = { calls, initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { }, setAchievement: rec('ach'),
-        getOrCreateLeaderboard: (...a) => { calls.push(['lb', ...a]); return Promise.resolve({ success: true, data: { id: 'id_' + a[0] } }); },
-        uploadLeaderboardScore: (...a) => { calls.push(['score', ...a]); return Promise.resolve({ success: true }); } };
+      const calls = [], ok = data => Promise.resolve({ success: true, data });
+      const bool = (n, v) => { if (typeof v != 'boolean') throw new Error(n + ': expected boolean, got ' + typeof v); };
+      let achReady = 0;
+      const cloud = new TextEncoder().encode(JSON.stringify({ done: [0, 0, 1], stars: [0, 0, 1] })); // level 3 done on another device
+      self.Wavedash = { calls, initialized: 0, init() { this.initialized = 1; return true; }, readyForEvents() { },
+        setAchievement(id, storeNow) { bool('setAchievement.storeNow', storeNow); calls.push(['ach', id, storeNow]); return !!achReady++; },
+        getOrCreateLeaderboard: (...a) => { calls.push(['lb', ...a]); return ok({ id: 'id_' + a[0] }); },
+        uploadLeaderboardScore: (...a) => { bool('uploadLeaderboardScore.keepBest', a[2]); calls.push(['score', ...a]); return ok({}); },
+        getUser: () => ({ id: 'u1', username: 'Tester', avatarUrl: '' }),
+        updateUserPresence: (...a) => { calls.push(['pres', ...a]); return ok(null); },
+        remoteFileExists: p => ok(p == 'prism/progress.json'),
+        downloadRemoteFile: p => ok(p),
+        readLocalFile: () => Promise.resolve(cloud),
+        writeLocalFile: (p, d) => { calls.push(['write', p, new TextDecoder().decode(d)]); return Promise.resolve(true); },
+        uploadRemoteFile: p => { calls.push(['upload', p]); return ok(p); } };
     });
     await page.goto(URL + 'wd/frame.html');
     const fr = await (await page.waitForSelector('iframe')).contentFrame();
     await fr.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 10000 });
+    // Identity on the title, and the cloud save merged into local progress (level 3 done, 1 / 40 on the title).
+    await fr.waitForFunction(() => /Playing as.*Tester/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+    await fr.waitForFunction(() => JSON.parse(localStorage.prism26_progress || '{}').done?.[2] == 1, null, { timeout: 5000 });
+    await fr.waitForFunction(() => /1 \/ 40 levels/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+    await shots(page, 'wavedash-title');
     await fr.evaluate(() => __prism.load(0)); await fr.waitForSelector('[data-a=p]');
     await fr.evaluate(s => __prism.setStrokes(s), SOLUTIONS[0]);
     await fr.click('[data-a=p]'); await fr.waitForSelector('.t h2', { timeout: 16000 });
-    await sleep(300);
+    // The first setAchievement returned false (SDK not ready): the retry a second later must land it.
+    await fr.waitForFunction(() => self.Wavedash.calls.filter(c => c[0] == 'ach' && c[1] == 'gem').length > 1, null, { timeout: 5000 });
+    // The debounced cloud save after the win must carry both devices' progress (the boot merge uploaded first).
+    await fr.waitForFunction(() => self.Wavedash.calls.some(c => c[0] == 'write' && JSON.parse(c[2]).done[0] == 1), null, { timeout: 5000 });
+    await fr.waitForFunction(() => self.Wavedash.calls.filter(c => c[0] == 'upload').length > 1, null, { timeout: 5000 });
     const calls = await fr.evaluate(() => self.Wavedash.calls);
-    const has = (...k) => calls.some(c => k.every((v, i) => c[i] == v));
-    if (!has('ach', 'gem', 1)) throw new Error('setAchievement(gem) not called: ' + JSON.stringify(calls));
-    if (!has('ach', 'solo', 1)) throw new Error('setAchievement(solo) not called for a one-stroke win');
+    const has = (...k) => calls.some(c => k.every((v, i) => c[i] === v));
+    if (!has('ach', 'gem', true)) throw new Error('setAchievement(gem, true) not called: ' + JSON.stringify(calls));
+    if (!has('ach', 'solo', true)) throw new Error('setAchievement(solo) not called for a one-stroke win');
     if (!has('lb', 'levels', 1, 0) || !has('lb', 'stars', 1, 0)) throw new Error('leaderboards not created: ' + JSON.stringify(calls));
-    if (!has('score', 'id_levels', 1, true)) throw new Error('levels score not uploaded: ' + JSON.stringify(calls));
+    if (!has('score', 'id_levels', 2, true)) throw new Error('levels score (cloud level 3 + level 1 = 2) not uploaded: ' + JSON.stringify(calls.filter(c => c[0] == 'score')));
+    const saved = calls.filter(c => c[0] == 'write').map(c => JSON.parse(c[2]));
+    if (!saved.some(p => p.done[0] == 1 && p.done[2] == 1)) throw new Error('cloud save does not hold both devices\' progress: ' + JSON.stringify(saved));
+    if (!has('upload', 'prism/progress.json')) throw new Error('cloud save not uploaded');
+    if (!calls.some(c => c[0] == 'pres' && /Level 1/.test(c[1].status))) throw new Error('presence not updated for the level: ' + JSON.stringify(calls.filter(c => c[0] == 'pres')));
   }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   await test('mute-glyph', async page => {

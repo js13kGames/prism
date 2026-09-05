@@ -792,3 +792,48 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   stage 2), `online-race` and `quick-match` play to three wins.
 - **Bytes.** +64 at first; trimmed non-gameplay wording (connection error, result line,
   lobby subtitle, three status strings) to land at **13,260** at -O2 (52 under the limit).
+
+## 22 Wavedash: why nothing ever reached the portal; cloud saves, identity, presence (2026-09-06)
+
+- **Report:** "the achievements and leaderboards are not updating" on wavedash.com.
+- **Cause, read from the SDK itself.** The platform does not document its validation, so the
+  SDK was pulled from npm (`@wvdsh/sdk-js` 1.3.48, the runtime the game page injects) and
+  read. Every public method runs its arguments through strict validators: `setAchievement(id,
+  storeNow)` requires `typeof storeNow == 'boolean'` and `uploadLeaderboardScore(id, score,
+  keepBest)` the same for `keepBest`. The game passed the number `1` for both (a byte saved
+  over `true`, in the days when this code was inside the 13 KB zip), the validator threw,
+  and `wd()` — which exists so that no platform failure can become a console error — ate
+  the exception. `getOrCreateLeaderboard` takes numeric enums and *did* validate, which is
+  why the boards existed on the portal (hidden, §17) while no score ever landed and no
+  achievement ever unlocked. The suite's recording mock had accepted anything and compared
+  with `==`, where `1 == true`; it now throws on a non-boolean, exactly like the SDK.
+- **Second thing the source showed:** `setAchievement` returns `false` and does nothing until
+  the SDK's stats manager has loaded the player's stats and the game's achievement ids from
+  the server (a subscription that lands a second or two after boot), and again for an id
+  the portal does not know. `ach()` now retries once a second for 30 s while it returns
+  false; the mock returns false on its first call and the test requires the retry to land.
+- **Cloud saves.** `prism/progress.json` in the player's Wavedash storage (`writeLocalFile` →
+  `uploadRemoteFile`, debounced 1.5 s after each `save()`). On boot `remoteFileExists` is
+  asked first — a plain `downloadRemoteFile` logs an SDK error for a new player's missing file
+  — then the remote object's `done` and `stars` are OR-merged into the device's (nothing is
+  ever un-done), saved, and the title re-rendered. `snd` stays local. The competition build
+  gets `cloudLoad=()=>0` / `cloudSave=()=>0` stubs: a call whose only argument is a function
+  expression or a variable read is dropped whole by terser, and the minified competition
+  bundle was checked byte-for-byte identical before and after (31,159 bytes). The 4-byte
+  difference in a fresh -O2 zip is roadroller's packing search, which is not bit-reproducible,
+  so the committed `dist/prism.zip` — the one the whole suite ran against — was restored and
+  is still the file to submit.
+- **Identity and presence.** `getUser()` gives `{id, username, avatarUrl}`; the title gets a
+  "Playing as <avatar> <name> · progress synced" line, built with DOM calls (the name is user
+  text). `updateUserPresence({status, details})` is called on every level load ("Level 12" /
+  "Daily run" / "Racing online" + level name) and on the way back to the menu. Both are the
+  same fold-away stubs in the competition build. Not done: the rival's name in race results —
+  that would put the name in the relay hello, which is shared protocol and bytes in the zip.
+- **Verification.** `platform-achievements` (both browsers, Wavedash build only) now boots
+  with a mocked cloud save holding level 3, asserts the title shows the name and 1 / 40, wins
+  level 1, and checks: `setAchievement('gem', true)` retried after a false, `solo`, the
+  `levels` score is 2 (cloud level 3 + level 1) with `keepBest === true`, the second cloud
+  write holds both devices' progress and is uploaded, and presence said "Level 1".
+  `tools/wavedash-leaderboards.mjs`: `levels` and `stars` are visible; `daily` is created by
+  the first daily win after this fix. The live check that remains is a real signed-in play on
+  wavedash.com — the headless sandbox still cannot log in.

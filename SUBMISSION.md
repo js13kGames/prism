@@ -6,7 +6,7 @@
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
-  `dist/wavedash/index.html` (19,017 bytes; not size-limited, never submitted to the form).
+  `dist/wavedash/index.html` (19,636 bytes; not size-limited, never submitted to the form).
 - `unzip -l`: exactly one entry, `index.html` (18,688 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
@@ -38,6 +38,10 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    API key, then `node build.js -O2 --wavedash`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — the Wavedash build (platform SDK init,
    achievements, leaderboards), which is **not** the file inside the zip.
+   **2.5.1 published 2026-09-06**: build `mn7905yx8jw4qvfjca01jt4add8dt8jw`, release
+   `rx73c9srcs4c6t18a1sg9ac3x58dvd4t`, https://wavedash.com/games/prism — the 19,636-byte Wavedash
+   build (achievements and leaderboards actually reach the portal; cloud saves; identity; presence).
+   The competition zip is unchanged. Earlier releases:
    **2.5 published 2026-09-06**: build `mn76e1e1ec77x51et7cvvywsbh8dts91`, release
    `rx7ce7sfr50h8w5vx3npyfe6cs8dtgz6`, https://wavedash.com/games/prism — the 19,017-byte Wavedash
    build (best of five, two-stage daily, harder rounds). Earlier releases:
@@ -54,6 +58,14 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
    the 13,209-byte build that is `dist/prism.zip`.
+
+## Wavedash 2.5.1 (DECISIONS.md §22) — competition zip unchanged
+
+- **Achievements and leaderboards now reach the portal.** The SDK rejects a non-boolean for
+  `storeNow` / `keepBest`; the game passed `1`. Achievements set before the SDK has loaded
+  are retried.
+- **Cloud saves**: progress merged from the account on boot, uploaded after every save.
+- **Identity and presence**: "Playing as …" on the title; friends see the level being played.
 
 ## What changed in version 2.5 (DECISIONS.md §21)
 

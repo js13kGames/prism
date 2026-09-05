@@ -3,7 +3,7 @@ import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W,
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
 import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
-import { onWD, ach, lb } from './wavedash.js';
+import { onWD, ach, lb, cloudLoad, cloudSave, wdTitle, pres } from './wavedash.js';
 import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic, setKey, setSeq } from './audio.js';
 import { join, send, leave, myId, mkCode, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
@@ -18,7 +18,9 @@ const A0 = Math.PI * 1.018, AS = Math.PI * .964; // title rainbow: the sweep who
 let prog = { done: [], stars: [], snd: 1 };
 try { prog = { ...prog, ...JSON.parse(localStorage.prism26_progress || '{}') }; } catch (e) { }
 setSnd(prog.snd);
-const save = () => { try { localStorage.prism26_progress = JSON.stringify(prog); } catch (e) { } };
+const save = () => { try { localStorage.prism26_progress = JSON.stringify(prog); } catch (e) { } cloudSave(prog); };
+// Wavedash cloud save (a no-op elsewhere): merge the account's progress into this device's, and show it.
+cloudLoad(c => { [prog.done, prog.stars].forEach((a, k) => { const b = c[k ? 'stars' : 'done'] || []; for (let i = 0; i < b.length; i++) if (b[i]) a[i] = 1; }); save(); if (!scr) title(); });
 
 function resize() {
   dpr = min(2, devicePixelRatio || 1);
@@ -48,6 +50,7 @@ function loadLevel(i, seed, d) {
   L = parseLevel(daily ? gen(seed, gd)[0] : LEVELS[i]);
   strokes = []; run = null; cur = null; played = 0; over = 0; PARTS.length = 0;
   col = L._ink.indexOf(max(...L._ink)); scr = scr == 3 ? 3 : 2;
+  pres(scr == 3 ? 'Racing online' : daily ? 'Daily run' : 'Level ' + (i + 1), L._name);
   setKey(((daily ? seed : (i / 5 | 0) * 7) + 5) % 12 - 5); setMusic(1); hud(); // key: a fifth up every five levels (C G D A E B F# C#), the seed's for generated ones
 }
 
@@ -60,8 +63,8 @@ function rewind() { run = null; PARTS.length = 0; hud(); setMusic(1); }
 
 // Screens
 const count = a => a.filter(Boolean).length;
-const title = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length, d)); };
-const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); setMusic(0); title(); };
+const title = () => { let d = 0; try { d = localStorage.prism26_daily == daySeed(); } catch (e) { } show(titleUI(snd, count(prog.done), count(prog.stars), LEVELS.length, d)); wdTitle(ui); };
+const goTitle = () => { scr = 0; run = null; ghosts = []; leave(); setMusic(0); title(); pres('In the menu'); };
 const goSelect = () => { scr = 1; run = null; setMusic(0); show(selectUI(prog, LEVELS.length)); };
 // L = null: the lobby must forget whatever level was open, because 'no level' is how the peers-changed handler
 // tells 'no round yet' (show the lobby, with Start for the host) from 'round live' (show the HUD). A stale level
