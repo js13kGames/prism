@@ -38,9 +38,12 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    API key, then `node build.js -O2 --wavedash`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — the Wavedash build (platform SDK init,
    achievements, leaderboards), which is **not** the file inside the zip.
+   **2.4 published 2026-09-06**: build `mn79facvn5x99r9na5rgwmjnwx8dt9qw`, release
+   `rx79fk28t2bzff6wkftx5a7fen8dtm9c`, https://wavedash.com/games/prism — the 18,896-byte
+   Wavedash build (quick match, rematch by agreement, creator-hosts fix). Earlier releases:
    **2.3 published 2026-09-06**: build `mn786p9j3fvt5fhawxjcy20a198dt03k`, release
    `rx71s0k91s96a9d759gd4k1hxd8dv7pr`, https://wavedash.com/games/prism — the 18,674-byte
-   Wavedash build (phase fix, scrollable menus, separate from the zip). Earlier releases:
+   Wavedash build (phase fix, scrollable menus, separate from the zip).
    **Published 2026-09-04**: build `mn7577vh48yny89ksk45b7xczh8dsh28`, release `rx73968cghm4kb05dbyaxbnp158ds0e4`,
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
