@@ -2,12 +2,12 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **13,171 bytes** (limit 13,312; 141 bytes of headroom).
+- `dist/prism.zip` — **13,225 bytes** (limit 13,312; 87 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
-  `dist/wavedash/index.html` (18,896 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,574 bytes). `unzip -t`: OK.
+  `dist/wavedash/index.html` (18,990 bytes; not size-limited, never submitted to the form).
+- `unzip -l`: exactly one entry, `index.html` (18,646 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the

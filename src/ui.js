@@ -36,9 +36,12 @@ export function hudUI(L, col, ink, play, hint, snd, tag) {
 export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${extra || 'Gem got!'}</h2><p>Ink ${used.toFixed(1)} / ${total}${star ? ' ★' : ''}</p>
 <div><button data-a=bk>Levels</button>${last ? '' : '<button class=b data-a=nx>Next</button>'}</div></div>`;
 
-// Lobby. q = waiting in the quick-match queue: no code to share, just the status and Leave.
+// Lobby. Out of a room it reads as two choices: the wide primary Quick match (the title's .w button), then
+// "or race a friend" with Create room and the code + Join row (the title's .n row width). In a room: status,
+// code and count, Copy / Start / Leave. q = waiting in the quick-match queue: no code to share, just Leave.
 export const lobbyUI = (status, code, n, host, q) => `<div class=t><h2>Online race</h2><p>${status}</p>${code && !q ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
-<div>${code ? `${q ? '' : `<button data-a=cp>Copy ${onWD() ? 'code' : 'link'}</button>`}${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button>` : `<button class=b data-a=qk>Quick match</button></div><div><button data-a=cr>Create room</button><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button>`}</div>
+${code ? `<div>${q ? '' : `<button data-a=cp>Copy ${onWD() ? 'code' : 'link'}</button>`}${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button></div>` :
+    `<button class="b w" data-a=qk>Quick match</button><p class=g>paired with whoever is waiting</p><p>— or race a friend —</p><div class=n><button data-a=cr>Create room</button></div><div class=n><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button></div>`}
 <button data-a=bk>Back</button></div>`;
 
 // Round start card: the solid menu backdrop, because the rainbow h1 is unreadable over a bright sky.

@@ -744,3 +744,9 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   socket that fails logs a browser console error the game cannot catch, and the offline-lobby
   test caught it). Competition zip 13,012 → 13,171 at -O2 (13,191 at -O1; 141 under the
   limit). Nothing in sound or gameplay was touched.
+- **Lobby layout (follow-up).** The first cut put Quick match, Create room, the code box and
+  Join in one row and it read as one muddle. The out-of-room lobby is now two choices: the
+  wide primary Quick match (the title's `.w` button) with "paired with whoever is waiting"
+  under it, then "— or race a friend —", Create room full width and the code + Join row (the
+  title's `.n` row width), then Back. Checked at 900×600, 390×844 and 844×390. +54 bytes;
+  zip 13,225 at -O2 (87 under the limit).
