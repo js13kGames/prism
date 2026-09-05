@@ -29,7 +29,9 @@ every day (same for everyone). **Online** is a best-of-three race: everyone in a
 the same generated level and draws at the same time, and the first unicorn to reach the
 gem wins the round. Nobody sees anybody else's paint while the round is live — copying is
 the whole reason that would be a bad idea — but the winner's run replays for everyone on
-the result screen. The host starts each round, and the match resets on a rematch.
+the result screen. **Quick match** pairs you with whoever is waiting and starts on its own;
+**Create room** gives you a code or link to send to someone. The room's creator starts each
+round, and a rematch needs both players to press Rematch.
 
 ### Controls
 
@@ -158,7 +160,8 @@ node dev.js                      # dev server on :8080 serving the unbundled sou
 Suite B boots the real artefact, clicks through every screen, completes level 1 with real
 pointer/touch input, injects the stored solution into all 40 levels, exercises fail/undo/
 clear/resize, portrait and landscape phone viewports, the lobby with the network blocked,
-and a two-page online race through an in-process WebSocket relay (`test/relay.js`).
+two-page online races through an in-process WebSocket relay (`test/relay.js`) — a room
+by code and a three-page quick match — and the shared-link flow.
 Any console error or page error fails the test. Screenshots land in `test-results/`.
 
 Authoring helpers (dev only): `tools/try.mjs` replays a level with a solution and a

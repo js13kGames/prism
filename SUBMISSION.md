@@ -1,13 +1,13 @@
-# SUBMISSION.md — PRISM (js13kGames 2026), version 2.3
+# SUBMISSION.md — PRISM (js13kGames 2026), version 2.4
 
 ## Artefact
 
-- `dist/prism.zip` — **13,012 bytes** (limit 13,312; 300 bytes of headroom).
+- `dist/prism.zip` — **13,171 bytes** (limit 13,312; 141 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
-  `dist/wavedash/index.html` (18,674 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,365 bytes). `unzip -t`: OK.
+  `dist/wavedash/index.html` (18,896 bytes; not size-limited, never submitted to the form).
+- `unzip -l`: exactly one entry, `index.html` (18,574 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -20,14 +20,17 @@
 `prism26-CODE`. Probed with `tools/relayprobe.mjs`: the relay accepts any sub-path as
 an isolated room (a message sent in `/prism/prism26-AAAA` reached only the other
 client in that room, not `/prism/prism26-BBBB` nor the base `/prism`), sends `@id` on
-connect and `+id` when another client joins. `tools/relaytest.mjs` drives two real
-browser pages through the live relay (create, join, same generated level). Races are best
+connect, `+id` to the room before a newcomer's first message and `-id` when one leaves —
+that join order is what makes the first player in the host (DECISIONS.md §20). Quick match
+queues in the public room `prism26-QUIK` and moves each pair to a private room.
+`tools/relaytest.mjs` drives five real browser pages through the live relay (room by code
+with the creator hosting, quick-match pairing with a third left waiting). Races are best
 of three rounds, each on a fresh level; no paint crosses the relay until someone wins it.
 
 ## Before submitting
 
 1. Upload `dist/prism.zip` as the draft's game file, open the preview in two tabs and
-   race once (Online → Create room / Join).
+   race once each way (Online → Quick match in both; Online → Create room / Join).
 2. The repository is at https://github.com/Arjun0014/PRISM (readable source in
    `src/`; the build is reproducible with the commands in README.md).
 3. For the Wavedash category: `wavedash.toml` already points at the PRISM game
@@ -42,6 +45,24 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
    the 13,209-byte build that is `dist/prism.zip`.
+
+## What changed in version 2.4 (DECISIONS.md §20)
+
+- **The creator is the host.** The host used to be the lowest random id, so whoever joined
+  by code or link out-ranked the creator half the time. Seniority now comes from the
+  relay's join order (its `+id` reaches the room before a newcomer's first message, and
+  `-id` removes a leaver), so the first player in is the host on every client, and the
+  room really shrinks when someone leaves.
+- **Quick match.** A second button in the Online lobby pairs you with whoever is waiting
+  (public room `QUIK`), moves the pair to a private room, and starts round 1 by itself; a
+  third arrival waits for the next stranger.
+- **Rematch by agreement.** Every player gets a Rematch button after a decided match; the
+  others see "Your rival wants a rematch!", and round 1 starts only when everyone has
+  pressed it. Next round between rounds is still the host's.
+- Verified in the browser suite (both browsers: `online-race`, `room-link`, new
+  `quick-match`) and against the live relay with real pages (`tools/relaytest.mjs`).
+  No sound or gameplay change; the bytes came from two dead pre-checks and redundant guards
+  in `net.js`.
 
 ## What changed in version 2.3 (DECISIONS.md §18–19)
 

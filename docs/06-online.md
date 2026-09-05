@@ -39,7 +39,13 @@ Two players (accept up to 4; everyone races) get the same generated level (docs/
 — or, if the generator was cut, level `1 + seed % 20`. Everyone draws at the same time
 and presses Play independently, as often as they like. First unicorn to reach the gem
 wins the round. The host starts the next round with a new seed; first to two round wins
-(or three rounds) takes the match, and a rematch resets the scores.
+(or three rounds) takes the match. A **rematch needs everyone**: each player presses
+Rematch (the others see "Your rival wants a rematch!"), and once the host has seen every
+rival's press and its own it starts round 1, which resets the scores.
+
+Two ways in (DECISIONS.md §20): **Quick match** pairs you with whoever is waiting — no code,
+no sharing — and round 1 starts by itself the moment the pair is together; **Create room /
+Join** is for racing someone you know, by code or link, and the room's creator starts it.
 
 **Paint is private while it matters** (DECISIONS.md §13). Live ghosts were specified
 here originally and shipped in v2; they turned the race into a copying contest, because
@@ -63,6 +69,18 @@ Play), and a result card naming the winner, the time, the score, and the one nex
   Room name sent to the relay = `prism26-` + code (namespaced).
 - "Create" generates a code and joins; "Join" takes a typed code.
 - URL `#r=CODE` auto-opens the lobby and joins (shareable link).
+- **Quick match** is the public room `QUIK` (its I means Create can never produce it).
+  Whoever is waiting there is the senior player; when a second player's hello arrives, the
+  senior one generates a private code, sends `["m", id, partnerId, code]`, and both leave
+  `QUIK` for that room, where the senior starts round 1 as soon as both are in. A third
+  player arriving meanwhile finds the queue empty and waits for the next one. If three are
+  in `QUIK` at once, the senior pairs with the first hello it saw and the other stays.
+- **Host = the senior player** (in the room first). Seniority comes from the relay's own
+  join order, not from ids or clocks: the relay sends `+id` to everyone already in the
+  room *before* the newcomer's first message can arrive (verified on the live relay), so a
+  hello that arrives with a `+` pending is a junior's, and a hello with none pending is
+  from someone who was there first. `-id` removes the peer that `+id` announced, so a
+  room shrinks when someone leaves and the host can never be a player who has gone.
 
 ## Protocol (JSON, tiny)
 
@@ -70,11 +88,13 @@ Every message: `[type, senderId, ...payload]`. `senderId` is 4 random base36 cha
 chosen on connect.
 
 ```
-["h", id, ts]                  hello, sent on connect and on every new hello seen (so late joiners learn everyone)
-["s", id, seed, round]         host announces the seed (host = lowest id among known ids; recomputed when membership changes)
+["h", id]                      hello, sent on connect and once in reply to every new hello seen (so late joiners learn everyone)
+["s", id, seed, round]         host announces the seed (host = the senior player, see Rooms; recomputed when membership changes)
 ["p", id]                      pressed play — presence only, no geometry
 ["w", id, t, [[c, [pts…]]…]]   reached the gem at sim time t, with the paint that did it
                                (exact points, so the replay is that run); the first "w" per round wins
+["r", id]                      wants a rematch; when the host holds one from everyone (itself included) it sends "s" for round 1
+["m", id, toId, code]          quick match: the senior player tells its partner which private room to move to
 ```
 
 Ghost sims: because the sim is deterministic, the winner's strokes are enough to *run
@@ -93,9 +113,9 @@ match, and every client clears its score when it sees round 1.
 
 ## Lobby UI
 
-Status line + code + player count + Create / Join / Copy link / Leave. On disconnect
-show "Reconnecting…" (PartySocket handles reconnects) and keep the current level
-playable solo.
+Status line + code + player count + Quick match / Create / Join / Copy link / Leave (the
+quick-match queue shows only "Looking for a rival…" and Leave: there is no code to share).
+On disconnect show "Reconnecting…" and keep the current level playable solo.
 
 ## Tests
 
@@ -109,5 +129,14 @@ playable solo.
   score, and a running replay of the winner's paint; a second win from it decides the
   match and the rematch must reset the score to 0–0.
 - `room-link`: Copy link puts the `#r=CODE` URL on the clipboard (read back in
-  chromium), a page opened on that link joins the room, and Leave really leaves — a
-  round started afterwards must not pull the leaver back in.
+  chromium), a page opened on that link joins the room **and the creator stays host**, the
+  host sees the room shrink to 1 player when the guest leaves (no Start), and Leave really
+  leaves — a round started afterwards must not pull the leaver back in.
+- `quick-match`: three pages. The first to press Quick match waits (no code, no Copy, no
+  round); the second is paired with it — both get the Round 1 card, the same level, and the
+  same private room that is not `QUIK`; the third finds the queue empty and waits without
+  ever being seen by the pair. The pair's match then runs to the end and the rematch needs
+  both presses (plus the stand-in third client's).
+- `online-race` also asserts the creator is the host and that a rematch does not start
+  until every player has pressed it (the guest's press alone shows "wants a rematch" to
+  the host).

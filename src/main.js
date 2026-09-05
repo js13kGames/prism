@@ -5,7 +5,7 @@ import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spa
 import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
 import { onWD, ach, lb } from './wavedash.js';
 import { sfx, initAudio, snd, setSnd, playNote, fanfare, setMusic, setKey, setSeq } from './audio.js';
-import { join, send, leave, myId, NET } from './net.js';
+import { join, send, leave, myId, mkCode, NET } from './net.js';
 import { gen, daySeed } from './gen.js';
 
 const Q = s => document.querySelector(s), ui = Q('#ui'), cv = Q('#c'), g = cv.getContext('2d');
@@ -66,7 +66,7 @@ const goSelect = () => { scr = 1; run = null; setMusic(0); show(selectUI(prog, L
 // L = null: the lobby must forget whatever level was open, because 'no level' is how the peers-changed handler
 // tells 'no round yet' (show the lobby, with Start for the host) from 'round live' (show the HUD). A stale level
 // made the host jump to that level's HUD the moment a guest joined, while the guest waited for Start forever.
-const goLobby = () => { scr = 3; run = null; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); openLobby(); };
+const goLobby = () => { scr = 3; run = null; L = null; show(lobbyUI('Find a rival, or race a friend by code', '', 0)); openLobby(); };
 
 // Actions dispatched from data-a attributes.
 const act = {
@@ -81,7 +81,7 @@ const act = {
   p: play, r: rewind,
   nx: () => { if (li < LEVELS.length - 1) loadLevel(li + 1); else goSelect(); },
   cr: () => openLobby(1), jn: () => openLobby((Q('#j') || {}).value), lv0: leaveRoom, cp: copyLink,
-  st: raceStart,
+  qk: () => openLobby('QUIK', 1), st: raceStart, rm: () => { send(['r']); ready(myId()); },
 };
 ui.onclick = e => { const b = e.target.closest('[data-a]'); if (b) { initAudio(); sfx(8); act[b.dataset.a](b.dataset.v); } };
 onkeydown = e => {
@@ -196,22 +196,28 @@ function render(dt) {
 // Nothing about a player's paint leaves their machine until they win the round: the only in-round message is
 // 'p' (started running), so nobody can read a rival's solution off the screen while they still need it. The
 // winner's strokes travel with their 'w', and everyone else watches that run replay on the result screen.
-let room = '', ghosts = [], round = 0, over = 0, score = {};
-const isHost = () => [myId(), ...ghosts.map(g => g._id)].sort()[0] == myId();
-const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost() && ghosts.length)); // Start needs a rival
+// qm: 0 a room by code; 1 waiting in the public quick-match room (QUIK — its I keeps mkCode from ever making
+// it); 2 a private room the quick match moved a pair into, where the host starts round 1 as soon as both are in.
+// The senior player (in the room first, from the relay's join order — net.js) hosts; _jr marks juniors.
+let room = '', ghosts = [], round = 0, over = 0, score = {}, rdy = {}, qm = 0;
+const isHost = () => ghosts.every(g => g._jr);
+const lobby = st => show(lobbyUI(st, room, ghosts.length + 1, isHost() && ghosts.length, qm == 1)); // Start needs a rival
 const mine = () => score[myId()] || 0;
 const theirs = () => ghosts.reduce((s, g) => s + (score[g._id] || 0), 0);
 const scoreLine = () => `You ${mine()} – ${theirs()} Rival`;
-const showRes = () => show(raceUI(over._w, over._s, scoreLine(), over._d, isHost()));
-function openLobby(code) {
+const showRes = () => show(raceUI(over._w, over._s, scoreLine(), over._d, isHost(), rdy[myId()], ghosts.some(g => rdy[g._id])));
+function openLobby(code, q) {
   if (code === undefined) { const h = location.hash.match(/#r=([a-zA-Z]{4})/); if (!h) return; code = h[1]; }
-  ghosts = []; over = 0; round = 0; score = {};
+  ghosts = []; over = 0; round = 0; score = {}; qm = q | 0;
   join(code, (st, data) => {
     if (st == 'err') { room = ''; lobby(data); }
-    else if (st == 'open') { room = data.room; lobby('Connected. Share the code!'); }
+    else if (st == 'open') { room = data; lobby(qm == 1 ? 'Looking for a rival…' : qm ? 'Rival found! Starting…' : 'Connected. Share the code!'); }
     else if (st == 'n') {
-      ghosts = data.map(i => ghosts.find(g => g._id == i) || { _id: i, _s: [], _run: null });
-      if (over) showRes(); else if (!L) lobby(isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…'); else hud();
+      ghosts = data.map(([i, j]) => ({ ...(ghosts.find(g => g._id == i) || { _id: i, _s: [] }), _jr: j }));
+      // Quick match: the senior of the first pair picks a private room, tells the other, and both move there.
+      if (qm == 1 && isHost() && ghosts.length) { const c = mkCode(); send(['m', ghosts[0]._id, c]); openLobby(c, 2); }
+      else if (qm == 2 && !round) raceStart();
+      else if (over) showRes(); else if (!L) lobby(isHost() ? 'Press Start when everyone is in' : 'Waiting for the host to start…'); else hud();
     }
     else if (st == 'msg') onMsg(data);
     else if (st == 'close') lobby('Reconnecting…');
@@ -232,23 +238,27 @@ function copyLink() {
   t.remove();
   lobby(ok ? done : u);
 }
-function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = 0; L = null; show(lobbyUI('Create a room or enter a code', '', 0)); }
+function leaveRoom() { leave(); room = ''; ghosts = []; score = {}; over = round = qm = 0; L = null; show(lobbyUI('Find a rival, or race a friend by code', '', 0)); }
 // Host drives the rounds: Start / Next round / Rematch all land here. Round 1 means a fresh match, so the
 // scores reset on both sides from the round number alone (a rejoining player picks up the same rule).
 function raceStart() { if (!isHost() || !ghosts.length) return; const s = Math.random() * 1e9 | 0, r = over && over._d ? 1 : round + 1; send(['s', s, r]); startRound(s, r); }
 function startRound(s, r) {
-  round = r; if (r == 1) score = {};
-  ghosts.forEach(gh => { gh._s = []; gh._run = null; gh._go = 0; });
+  round = r; rdy = {}; if (r == 1) score = {};
+  ghosts.forEach(gh => { gh._s = []; gh._run = gh._go = 0; });
   loadLevel(LEVELS.length, s);
   show(cardUI('Round ' + r, r > 1 ? scoreLine() : 'First to two rounds takes the match'));
   setTimeout(() => { if (scr == 3 && !over) hud(); }, 1400);
 }
 function onMsg([type, id, ...a]) {
-  let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _run: null });
+  let gh = ghosts.find(x => x._id == id); if (!gh) ghosts.push(gh = { _id: id, _s: [], _jr: 1 }); // no hello: not senior
   if (type == 's') startRound(a[0], a[1]);
+  else if (type == 'm') { if (a[0] == myId()) openLobby(a[1], 2); }   // quick match: my pair's private room
+  else if (type == 'r') ready(id);
   else if (type == 'p') { gh._go = 1; hud(); }                       // rival is running — no paint, just presence
   else if (type == 'w') { gh._s = a[1].map(k => mkStroke(k[0], k[1])); if (L) gh._run = createRun(L, gh._s); raceWin(id, a[0]); }
 }
+// Rematch: everyone presses it; once the host has seen every rival's 'r' and its own, it starts round 1.
+function ready(id) { if (!over || !over._d) return; rdy[id] = 1; showRes(); if (rdy[myId()] && ghosts.every(g => rdy[g._id])) raceStart(); }
 // Round over. First to the gem takes the round; best of three (or three rounds) takes the match. The loser's
 // own run is dropped so the winner's replay has the stage; the winner's unicorn stays parked on the gem.
 function raceWin(id, t) {
@@ -264,7 +274,7 @@ function raceWin(id, t) {
   showRes();
 }
 
-window.__prism = { net: NET, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get strokes() { return strokes; } };
+window.__prism = { net: NET, get room() { return room; }, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get strokes() { return strokes; } };
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);

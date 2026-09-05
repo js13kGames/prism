@@ -233,6 +233,7 @@ async function runBrowser(name) {
       if (await page.$('[data-a=p]') || await page2.$('[data-a=p]')) throw new Error('a level HUD is showing before the host pressed Start');
       const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
       if (await guest.$('[data-a=st]')) throw new Error('both pages think they are host');
+      if (host != page) throw new Error('the player who created the room is not the host'); // seniority, not a random id
       await host.click('[data-a=st]');
       const txt = p => p.$eval('#ui', u => u.textContent);
       for (const p of [page, page2]) await at('round 1 card', p.waitForFunction(() => /Round 1/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 }));
@@ -274,9 +275,19 @@ async function runBrowser(name) {
       spy.send(JSON.stringify(['w', 'zzzz', 3.5, [[1, [10, 12, 16, 12]]]]));
       for (const p of [page, page2]) await at('match result', p.waitForFunction(() => /take the match/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
       if (!/You 0 – 2 Rival/.test(await txt(host))) throw new Error('match card lost the score: ' + await txt(host));
-      if (!/Rematch/.test(await txt(host))) throw new Error('host was not offered a rematch: ' + await txt(host));
+      for (const p of [page, page2]) if (!await p.$('[data-a=rm]')) throw new Error('not everyone was offered a rematch: ' + await txt(p));
       await shots(host, 'race-match-end');
-      await host.click('[data-a=st]'); // Rematch
+      // A rematch needs everyone: the guest's press only tells the others; nothing starts until the host and
+      // the third player have pressed too.
+      await guest.click('[data-a=rm]');
+      await at('guest waits for rival', guest.waitForFunction(() => /Waiting for your rival/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 }));
+      await at('host told of the request', host.waitForFunction(() => /wants a rematch/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 }));
+      if (await guest.$('[data-a=rm]')) throw new Error('the guest can press Rematch twice');
+      await host.click('[data-a=rm]');
+      await sleep(600);
+      if (/Round 1/.test(await txt(host))) throw new Error('the rematch started before everyone agreed');
+      if (!/Waiting for your rival/.test(await txt(host))) throw new Error('host is not waiting for the third player: ' + await txt(host));
+      spy.send(JSON.stringify(['r', 'zzzz']));
       for (const p of [page, page2]) await at('rematch card', p.waitForFunction(() => /Round 1/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
       for (const p of [page, page2]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
       for (const p of [page, page2]) {
@@ -291,6 +302,56 @@ async function runBrowser(name) {
       if (stowaways.length) throw new Error('rivals followed the player out of the room: ' + JSON.stringify(stowaways));
       await shots(host, 'after-race-solo');
     } finally { try { spy && spy.close(); } catch (e) { } relay.close(); }
+  }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
+
+  await test('quick-match', async (page, ctx) => {
+    const relay = await startRelay();
+    const pages = [page, await ctx.newPage(), await ctx.newPage()];
+    for (const p of pages.slice(1)) p.on('pageerror', e => { throw new Error('page error: ' + e.message); });
+    const txt = p => p.$eval('#ui', u => u.textContent);
+    const wait = (p, re, ms = 5000) => p.waitForFunction(re => new RegExp(re).test(document.querySelector('#ui').textContent), re.source, { timeout: ms });
+    try {
+      for (const p of pages) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); await p.click('[data-a=on]'); }
+      const [a, b, c] = pages;
+      await a.click('[data-a=qk]');
+      await wait(a, /Looking for a rival/);
+      if (await a.$('#ui b') || await a.$('[data-a=cp]')) throw new Error('the quick-match queue shows a room code to share');
+      if (!await a.$('[data-a=lv0]')) throw new Error('no Leave button while queueing');
+      await sleep(800);
+      if (/Round/.test(await txt(a))) throw new Error('a round started with nobody else in the queue');
+      await shots(a, 'quick-queue');
+      await b.click('[data-a=qk]');
+      for (const p of [a, b]) await wait(p, /Round 1/);
+      for (const p of [a, b]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+      const names = await Promise.all([a, b].map(p => p.$eval('.h span', s => s.textContent)));
+      if (names[0] != names[1]) throw new Error('the pair got different levels: ' + names);
+      if (!/Round 1 · 0–0/.test(names[0])) throw new Error('HUD has no round tag: ' + names[0]);
+      const rooms = await Promise.all([a, b].map(p => p.evaluate(() => __prism.room)));
+      if (rooms[0] != rooms[1] || rooms[0] == 'QUIK') throw new Error('the pair did not move to a private room: ' + rooms);
+      // The third player finds the queue empty and waits; the racing pair never hear from them.
+      await c.click('[data-a=qk]');
+      await wait(c, /Looking for a rival/);
+      await sleep(1000);
+      if (/Round/.test(await txt(c)) || await c.$('[data-a=p]')) throw new Error('a third player was pulled into the pair\'s race');
+      if ((await a.evaluate(() => __prism.gs())).length != 1) throw new Error('the pair saw the third player');
+      // The pair's match runs as usual: the senior of the two hosts, and the rematch needs both.
+      await c.click('[data-a=lv0]');
+      const spyWin = async () => { const s = new WebSocket(`ws://localhost:${relay.port}/prism26-${rooms[0]}`); await new Promise(r => s.onopen = r); return s; };
+      const s = await spyWin();
+      s.send(JSON.stringify(['w', 'zzzz', 2, [[1, [10, 12, 16, 12]]]]));
+      for (const p of [a, b]) await wait(p, /Round lost/);
+      const host = await a.$('[data-a=st]') ? a : b;
+      await host.click('[data-a=st]');
+      for (const p of [a, b]) await wait(p, /Round 2/);
+      for (const p of [a, b]) await p.waitForSelector('[data-a=p]', { timeout: 5000 });
+      s.send(JSON.stringify(['w', 'zzzz', 2, [[1, [10, 12, 16, 12]]]]));
+      for (const p of [a, b]) await wait(p, /take the match/);
+      await shots(a, 'quick-match-end');
+      for (const p of [a, b]) await p.click('[data-a=rm]');
+      s.send(JSON.stringify(['r', 'zzzz']));
+      for (const p of [a, b]) await wait(p, /Round 1/);
+      s.close();
+    } finally { relay.close(); }
   }, {}, route => route.request().url().startsWith(URL) ? route.continue() : route.abort());
 
   await test('resize', async page => {
@@ -433,12 +494,28 @@ async function runBrowser(name) {
 
       // Leave has to actually leave: a round the host starts afterwards must not drag this page back in.
       const host = await page.$('[data-a=st]') ? page : page2, guest = host == page ? page2 : page;
+      if (host != page) throw new Error('the player who opened the link became the host');
       await guest.click('[data-a=lv0]');
       await guest.waitForSelector('[data-a=cr]', { timeout: 3000 });
+      // ...and the host sees the room shrink (the relay's '-id' removes the peer), so Start goes away again.
+      await host.waitForFunction(() => /1 player\b/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      if (await host.$('[data-a=st]')) throw new Error('host can Start with nobody left in the room');
+      // A rejoin makes it 2 players again, then the host starts a round the leaver must not see.
+      await guest.fill('#j', code); await guest.click('[data-a=jn]'); // Leave lands on the lobby's Create/Join screen
+      for (const p of [page, page2]) await p.waitForFunction(() => /2 players/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
+      await guest.click('[data-a=lv0]');
+      await guest.waitForSelector('[data-a=cr]', { timeout: 3000 });
+      await host.waitForFunction(() => /1 player\b/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
+      // Start needs a rival, so a spy stands in for one; the leaver must stay out.
+      const spy = new WebSocket(`ws://localhost:${relay.port}/prism26-${code}`);
+      await new Promise((res, rej) => { spy.onopen = res; spy.onerror = () => rej(new Error('spy socket failed')); });
+      spy.send(JSON.stringify(['h', 'zzzz']));
+      await host.waitForSelector('[data-a=st]', { timeout: 3000 });
       await host.click('[data-a=st]');
       await sleep(1500);
       if (await guest.$('[data-a=p]')) throw new Error('a player who left was pulled into the round');
       if (!await guest.$('[data-a=cr]')) throw new Error('a player who left did not stay out of the room');
+      spy.close();
     } finally { relay.close(); }
   }, name == 'chromium' ? { permissions: ['clipboard-read', 'clipboard-write'] } : {},
     route => route.request().url().startsWith(URL) ? route.continue() : route.abort());

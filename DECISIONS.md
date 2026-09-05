@@ -694,3 +694,53 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   ≥ 0.2 u above the floor is a wall to the unicorn (as for every colour), or a stretch of the
   line dipped below the floor surface is out of reach and the wall is solid again. Both are
   pre-existing paint behaviour, visible on screen, and unchanged.
+
+## 20 Quick match, rematch by agreement, and the host who was not the creator (2026-09-06)
+
+- **Report.** "When I paste the room code into a new session I suddenly become the host in
+  this new session, the creator becomes the secondary — sometimes." Cause: the host was
+  the *lowest id*, and ids are four random base-36 characters chosen on connect, so a
+  guest out-sorted the creator half the time. It had nothing to do with pasting.
+- **Fix: the host is the senior player**, and seniority comes from the relay. Probed the
+  live relay again (`wss://relay.js13kgames.com/prism/…`, three clients): its ids are
+  random 22-character strings (no ordering to borrow), but it sends `+id` to everyone
+  already in the room before the newcomer's first message can arrive, and `-id` when a
+  client closes. `net.js` now queues the `+` ids; an unknown hello takes the next queued
+  id (a junior), and a hello with nothing queued is from someone who was there first (a
+  senior). `isHost()` is "no senior peer". Every client derives the same order from the
+  same events, without clocks (skew would have made the wrong player host, or two hosts)
+  and without ids. `-id` now removes the peer it announced, so the player count is right
+  after a leave and the Start button disappears when the host is alone again; before,
+  peers never left (`-` was ignored and the "time out via hello" in the comment did not
+  exist). A client that speaks without a hello (a stray sender) is treated as junior, so it
+  cannot unseat the host. The `+`-triggered re-hello was dropped: the newcomer's own hello
+  and the one reply it gets are the whole handshake. Removed the dead `NET.url == 'TODO'` pre-check in
+  `join` (from before the relay was known) and the unused `{room,id,n}` open payload; the
+  `navigator.onLine` pre-check stays, see Bytes below.
+- **Quick match.** Second way into a race, for the player who has nobody to send a code
+  to. The queue is the public room `QUIK` — a code the generator cannot produce, since it
+  has no I — so nothing else in `net.js` changed. The senior player in the queue, on
+  seeing a second hello, makes a private code, sends `["m", partnerId, code]` and moves;
+  the partner follows on that message; in the private room the senior starts round 1 the
+  moment the other arrives (mode 2 of `qm`). The pair leaves the queue empty behind them,
+  so a third arrival waits for the next stranger instead of joining a race in progress,
+  and matches stay two-player as the user asked ("anyone waiting is instantly paired").
+  Considered and rejected: racing inside `QUIK` itself (turns into a public free-for-all
+  where latecomers wait out the round) and a relay-side queue (there is no server logic).
+- **Rematch needs everyone.** The host's Rematch used to restart the match unilaterally.
+  Now the result card of a decided match offers Rematch to every player; a press sends
+  `["r"]` and the card shows "Waiting for your rival…" on that side and "Your rival wants
+  a rematch!" on the others. The host starts round 1 (which still resets the scores from
+  the round number) only once it holds an `r` from everyone including itself, whichever
+  order they arrive in. Next round between rounds stays the host's alone, as before.
+- **Verification.** `online-race` now asserts the creator is the host and walks the
+  two-step rematch (guest first, host second, then the stand-in third client); `room-link`
+  asserts the link-opener is not the host, the room shrinks to 1 player on Leave, and a
+  rejoin works; new `quick-match` pairs two of three pages, checks the third is never seen,
+  and plays the pair's match through a rematch. Both browsers; `tools/relaytest.mjs` still
+  runs against the live relay.
+- **Bytes.** +231 for the three features at first; the dead checks, the redundant guards
+  and the open payload gave 84 back (the `navigator.onLine` check had to come back: offline, a
+  socket that fails logs a browser console error the game cannot catch, and the offline-lobby
+  test caught it). Competition zip 13,012 → 13,171 at -O2 (13,191 at -O1; 141 under the
+  limit). Nothing in sound or gameplay was touched.

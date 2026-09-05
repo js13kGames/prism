@@ -75,8 +75,8 @@ Indigo (19), Violet (23), Gate mechanic (27).
    first Play). HUD bottom (draw phase): palette buttons with ink bars, Undo, Clear,
    Play. HUD bottom (play phase): Rewind. HUD top-left: back button.
 4. **Win overlay** — over the canvas.
-5. **Online lobby** — "Create room" (shows a 4-letter code) / "Join room" (input) /
-   status line. See docs/06.
+5. **Online lobby** — "Quick match" (paired with whoever is waiting) / "Create room"
+   (shows a 4-letter code) / "Join room" (input) / status line. See docs/06.
 
 Keep UI text tiny; the ink bars and colour swatches do the talking.
 
