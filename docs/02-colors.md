@@ -107,11 +107,16 @@ Falling strokes never collide with the unicorn.
 - Solid to the unicorn like any paint. While the unicorn touches an indigo stroke it
   is **phasing**: the solid blocks that stroke leads into are ignored, so the unicorn
   walks along the line through walls, down ramps through floors, and up ramps inside
-  towers. "Leads into" = the set of blocks that would overlap the unicorn if it slid
-  along the whole line at its current offset from it (computed once per stroke on
-  first contact). Gates, spikes and water are never phased.
-- Phasing lasts 6 frames after the last indigo contact (so the unicorn can sink onto a
-  descending ramp) and as long as its centre is deep inside one of those blocks.
+  towers. "Leads into" = the set of blocks the unicorn's **centre** would get well
+  inside (within R/2) if it slid along the whole line at its current offset from it
+  (computed once per stroke on first contact). A line drawn a little into a floor does
+  not make that floor phaseable. Gates, spikes and water are never phased.
+- Those blocks are ignored for 6 frames after the last indigo contact (so a bumpy or
+  descending line that loses contact for a frame does not stop the walk-through). A
+  block the centre actually **entered while touching the line** stays ignored until the
+  unicorn is clear of it — that is what lets it out of a line that ends inside a wall.
+  A block it is merely resting on never gets that, so after the line ends the floor
+  holds it: the grace can let it dip, never fall through (DECISIONS.md §19).
 - The unicorn is drawn at 55 % alpha while phasing.
 - Intro level 19 (wall), 20 (down through a floor), 21 (up inside a tower), 22 (three
   walls, one has an arch — ink for two).

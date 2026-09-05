@@ -2,12 +2,12 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **12,983 bytes** (limit 13,312; 329 bytes of headroom).
+- `dist/prism.zip` — **13,012 bytes** (limit 13,312; 300 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
-  `dist/wavedash/index.html` (18656 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,324 bytes). `unzip -t`: OK.
+  `dist/wavedash/index.html` (18,674 bytes; not size-limited, never submitted to the form).
+- `unzip -l`: exactly one entry, `index.html` (18,365 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -42,7 +42,14 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
    the 13,209-byte build that is `dist/prism.zip`.
 
-## What changed in version 2.3 (DECISIONS.md §18)
+## What changed in version 2.3 (DECISIONS.md §18–19)
+
+- **No more falling through the floor past a phased wall.** A hand-drawn indigo line that
+  dipped a few hundredths into the floor (or whose end the unicorn bumped from the side) made
+  the *floor* phaseable, and the "deep inside" rule then kept phasing until the unicorn left
+  the world. Blocks now count only when the centre trace is well inside them, and after the
+  line ends only blocks the centre entered while touching it stay ignored, until it is clear.
+  Suite A jitters every indigo solution 90 ways: 0 of 1,080 runs fall through (old sim: 81).
 
 - **The level grid's Back button is reachable on a landscape phone.** The menu overlay
   centred its content and could not scroll, so the eight-row grid lost its heading and its
@@ -53,7 +60,7 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 - **Two builds.** All Wavedash code lives in `src/wavedash.js`; the competition build swaps
   in a no-op stub that terser folds away (the build fails if the string `Wavedash` survives),
   and `node build.js --wavedash` writes the platform build to `dist/wavedash/index.html`
-  alone. The competition zip shrank by 226 bytes. The suite tests the competition build with
+  alone. The competition zip shrank by 197 bytes net of the phase fix. The suite tests the competition build with
   the SDK global injected (it must ignore it) and the Wavedash build with the same global (it
   must call `init()`, say Copy code, and post achievements and scores).
 
@@ -130,18 +137,18 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 ```
 js13k competition build (roadroller -O2)
 module              source   min  deflate
-sim.js              14406   5999   3042
+sim.js              15186   6101   3063
 levels.js            5223   4638   1905
 gen.js               3932   1696    921
 audio.js             6803   2836   1577
-render.js            7373   4671   1702
+render.js            7474   4686   1710
 net.js               2308   1174    714
 wavedash.js (stub)     37     30     22
 ui.js                3871   2471   1163
 main.js             15581   7416   3905
 style.css            2802   2394    988
 
-bundle raw 59552, minified 30304, roadrolled 15703, html 18324, zip 12983 (zopfli)
+bundle raw 60433, minified 30423, roadrolled 15744, html 18365, zip 13012 (zopfli)
 ```
 
 ## What was cut or changed
@@ -188,10 +195,10 @@ Deviations from the original spec, all logged in DECISIONS.md:
 - If the lobby is opened offline, the browser itself may log a network error for the
   refused WebSocket connection (outside our code); the lobby shows a status line.
 
-## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 0 warnings)
+## Test results (suite A: 40/40 levels solved, 40/40 empty-fail, determinism identical, 40/40 generator seeds, 1,080 jittered indigo runs with 0 fall-throughs, 0 warnings)
 
-Suite B against the unzipped release zip (12,983 bytes) plus the Wavedash build (`dist/wavedash/index.html`,
-18,656 bytes, served under `/wd/` for the two platform tests), one full run after the final `-O2` builds:
+Suite B against the unzipped release zip (13,012 bytes) plus the Wavedash build (`dist/wavedash/index.html`,
+18,674 bytes, served under `/wd/` for the two platform tests), one full run after the final `-O2` builds:
 32/32 in chromium and firefox, all 40 levels won in both. The live js13kGames relay was exercised separately
 with `tools/relaytest.mjs`; the Wavedash SDK calls are exercised against a recording mock
 (`platform-achievements`) because the real sandbox needs an interactive login. The competition build is

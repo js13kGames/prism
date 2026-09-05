@@ -86,7 +86,7 @@ function rainbow(g, x0, y0, x1, y1) {
 // The unicorn. u = run._u (x, y, dir, g, gr, climb, vx, vy, ph, fe), t = seconds for the leg cycle.
 // Local space: origin at the circle centre, facing +x, y down; hooves at y = R.
 export function drawUnicorn(g, u, t) {
-  const air = !u._gr && !u._climb, ph = u._ph > 0;
+  const air = !u._gr && !u._climb, ph = u._ph > 0 || u._pin?.length > 0; // (the title and start-marker unicorns are plain objects with no phase state)
   g.save(); g.translate(u._x, u._y);
   if (u._climb) { const a = Math.atan2(u._vy, u._vx); g.rotate(u._dir < 0 ? a + PI : a); }
   g.scale(u._dir, u._g);

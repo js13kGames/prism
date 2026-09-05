@@ -49,7 +49,7 @@ export function createRun(L, strokes) {
   const run = {
     _lv: L,
     _s: strokes.map(s => ({ _c: s._c, _p: s._p.slice(), _len: s._len, _touched: 0, _t: 0, _armed: 1, _dead: 0, _sup: 0, _vy: 0 })),
-    _u: { _x: L._sx, _y: L._sy - R, _vx: 0, _vy: 0, _dir: L._sd, _g: 1, _climb: null, _bcd: 0, _fcd: 0, _ph: 0, _pht: 0, _pst: null, _pth: [], _fe: 0, _fet: 0, _feg: 0, _mask: 0, _gr: 0, _surf: -1 },
+    _u: { _x: L._sx, _y: L._sy - R, _vx: 0, _vy: 0, _dir: L._sd, _g: 1, _climb: null, _bcd: 0, _fcd: 0, _ph: 0, _pht: 0, _pst: null, _pth: [], _pin: [], _fe: 0, _fet: 0, _feg: 0, _mask: 0, _gr: 0, _surf: -1 },
     _t: 0, _state: 0, _ev: [], _gate: 0
   };
   settle(run);
@@ -124,7 +124,8 @@ function fallPaint(run) {
 }
 
 // Collect all contacts: paint first (so a pad drawn on a floor line still acts), then rects, deepest first.
-// While phasing (touching indigo, or deep inside a block after touching it) solid rects are ignored.
+// While phasing (touching indigo) the solid rects that line leads into are ignored, and a rect the centre entered
+// while touching stays ignored until the unicorn is clear of it (a line may end inside a wall).
 function contacts(run) {
   const u = run._u, out = [];
   for (const s of run._s) {
@@ -138,7 +139,7 @@ function contacts(run) {
     }
   }
   for (const r of run._lv._rects) {
-    if (r._t == 1 || r._t == 2 || (r._t == 3 && run._gate) || (u._ph && u._pth.includes(r))) continue;
+    if (r._t == 1 || r._t == 2 || (r._t == 3 && run._gate) || (u._ph && u._pth.includes(r)) || u._pin.includes(r)) continue;
     const cx = clamp(u._x, r._x, r._x + r._w), cy = clamp(u._y, r._y, r._y + r._h);
     const dx = u._x - cx, dy = u._y - cy, d = hypot(dx, dy);
     if (d >= R) continue;
@@ -226,8 +227,9 @@ export function step(run) {
       const vn = u._vx * nx + u._vy * ny;
       if (vn > .5) continue;
       if (s) { u._mask |= 1 << c._c; if (!s._touched) { s._touched = 1; run._ev.push([0, c._c, u._x, u._y]); } }
-      if (c._c == 5) { // phase: remember the blocks this line leads into (sampled at the unicorn's offset from the line)
-        if (s != u._pst) { const [cx, cy] = closest(u._x, u._y, s._p[c._i], s._p[c._i + 1], s._p[c._i + 2], s._p[c._i + 3]), ox = u._x - cx, oy = u._y - cy; u._pst = s; u._pth = L._rects.filter(r => r._t == 0 && samp(s, (x, y) => distRect(r, x + ox, y + oy) < R - .05)); }
+      if (c._c == 5) { // phase: remember the blocks this line leads into (sampled at the unicorn's offset from the line;
+        // a block counts when the centre would be well inside it, so a line drawn a little into a floor does not phase the floor)
+        if (s != u._pst) { const [cx, cy] = closest(u._x, u._y, s._p[c._i], s._p[c._i + 1], s._p[c._i + 2], s._p[c._i + 3]), ox = u._x - cx, oy = u._y - cy; u._pst = s; u._pth = L._rects.filter(r => r._t == 0 && samp(s, (x, y) => distRect(r, x + ox, y + oy) < R / 2)); }
         u._pht = 1;
       }
       if (c._c == 4) u._fet = 1;
@@ -261,8 +263,14 @@ export function step(run) {
   if (hypot(u._x - L._gx, u._y - L._gy) < R + .6) { run._state = 1; run._ev.push([5, 0, L._gx, L._gy]); return 1; }
   if (u._mask == 127 && !run._gate) { run._gate = 1; rs = 1; run._ev.push([6, 0, u._x, u._y]); }
   if (u._x < -OUT || u._x > W + OUT || u._y < -OUT || u._y > H + OUT) return fail(run);
-  // phasing: 6 frames after the last indigo contact, and as long as the centre is deep inside one of the blocks
-  u._ph = u._pht ? 6 : u._ph && u._pth.some(r => distRect(r, u._x, u._y) < R / 2) ? u._ph : max(0, u._ph - 1); u._pht = 0;
+  // phasing: the blocks the line leads into are ignored for 6 frames after the last indigo contact (a bumpy or
+  // descending line loses contact for a frame or two). A block the centre entered *while touching* is ignored
+  // until the unicorn is clear of it — that is what lets it out of a line that ends inside a wall. A block it is
+  // merely resting on (a line drawn a little into the floor) never gets that, so the grace can only let it dip,
+  // not fall through: the moment the grace ends, the floor holds it again.
+  for (const r of u._pth) if (u._pht && !distRect(r, u._x, u._y) && !u._pin.includes(r)) u._pin.push(r);
+  u._pin = u._pin.filter(r => distRect(r, u._x, u._y) < R);
+  u._ph = u._pht ? 6 : max(0, u._ph - 1); u._pht = 0;
   u._bcd -= DT; u._fcd -= DT;
   if (rs) settle(run);
   return 0;

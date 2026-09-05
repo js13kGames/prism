@@ -657,3 +657,40 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   saying Copy link. Bytes: the competition zip drops from 13,209 to 13,003 at -O1 before
   the -O2 search (the stubbed module is 22 bytes deflated on its own, but removing it also
   removes a promise chain and the `self.Wavedash` reads from ui.js and main.js).
+
+## 19 Falling through the floor just past a phased wall (2026-09-05)
+
+- **Report:** "where there is a full block and we need to phase to reach the other side, just
+  after crossing there is a broken area where the unicorn falls down through the floor; the
+  floor looks right." Reproduced in the sim with level 19 (Through) and an indigo line drawn
+  along the floor with hand-drawn wobble: a line only 0.05 u into the floor failed every run,
+  a flat line with ±0.05 wobble failed 18 of 20, a perfectly flat line always won. Old sim
+  in the jittered-solution sweep below: 81 of 1,080 runs fell through, all of them ending at
+  x ≈ 22, y > 18 — the floor right past the wall.
+- **Cause, two rules compounding.** (1) On first contact with an indigo stroke the sim
+  records the solid blocks the line "leads into" by sliding a sample of the line at the
+  unicorn's offset from it and keeping any block within `R − .05` of that trace. A line
+  drawn 0.05 u into the floor, or a line whose *end* the unicorn bumps from the side (which
+  gives a shallow offset, so the trace hugs the floor even when the line is above it), put
+  the **floor** on that list. (2) Phasing lasted 6 frames after the last contact *and*
+  "as long as the centre is deep inside one of those blocks". So the moment the line ended
+  past the wall, the floor was ignored for 6 frames, the unicorn sank ~0.2 u, its centre was
+  now "deep inside" the floor, and the extension never ended: it fell out of the world. The
+  wall crossing itself was fine, which is why it read as a broken patch of floor.
+- **Fix, in `step`/`contacts`.** The lead-into test now needs the centre trace *well inside*
+  a block (`< R / 2`), so a line drawn a little into a floor does not phase the floor. And the
+  open-ended extension is replaced by an explicit list of blocks the centre has **entered
+  while touching indigo** (`_pin`); such a block stays ignored until the unicorn is clear of
+  it (that is what lets it out of a line that ends inside a wall), and everything else is
+  ignored only for the 6-frame grace. A block the unicorn is merely resting on never gets on
+  that list, so the grace can let it dip into a floor for a few frames and the floor then
+  holds it again — it cannot fall through. The phasing sprite alpha follows both states.
+- **Verification.** All 40 stored solutions and 40 generator seeds still pass, byte-identical
+  determinism. New suite-A check: every indigo stroke of every indigo solution (12 levels) is
+  jittered vertically by ±0.05/±0.1/±0.15 u, 30 seeds each; no run may end inside a solid or
+  below the world while still inside the level. New sim: 0 of 1,080; old sim: 81 (and 120
+  fewer wins overall, because a jittered line's start used to sink the unicorn before the
+  wall too). The jittered runs that still fail do so by turning around: a line end sitting
+  ≥ 0.2 u above the floor is a wall to the unicorn (as for every colour), or a stretch of the
+  line dipped below the floor surface is out of reach and the wall is solid again. Both are
+  pre-existing paint behaviour, visible on screen, and unchanged.

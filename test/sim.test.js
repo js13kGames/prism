@@ -2,7 +2,7 @@
 //   node test/sim.test.js            run everything
 //   node test/sim.test.js 7 9        run only levels 7 and 9
 //   node test/sim.test.js 7 --trace  print the unicorn trajectory every 10 frames
-import { parseLevel, createRun, step, hashState, mkStroke, strokeLen, inSolid, TIMEOUT, DT } from '../src/sim.js';
+import { parseLevel, createRun, step, hashState, mkStroke, strokeLen, inSolid, TIMEOUT, DT, W, H } from '../src/sim.js';
 import { LEVELS } from '../src/levels.js';
 import { SOLUTIONS } from './solutions.js';
 
@@ -80,6 +80,26 @@ if (!only.length) {
   ok(starCount.yes > 0, 'no level can earn a star');
   if (starCount.yes < LEVELS.length * .6) warn('fewer than 60% of levels can earn a star');
   if (starCount.no < 3) warn('fewer than 3 levels deny a star');
+}
+
+// Phase robustness (DECISIONS.md §19): hand-drawn indigo lines wobble, and a wobble used to make the floor under
+// the line phaseable, so the unicorn fell through the floor right after a wall. Jitter every indigo stroke of every
+// indigo solution and require that no run ends inside a solid block or below the world while still inside the
+// level (walking off an edge because a jittered line was missed is a plain fail, not a fall-through).
+if (!only.length) {
+  let seed = 11, runs = 0, sank = 0; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  for (let i = 0; i < LEVELS.length; i++) {
+    const sol = SOLUTIONS[i]; if (!sol.some(([c]) => c == 5)) continue;
+    const L = parseLevel(LEVELS[i]);
+    for (const jit of [.1, .2, .3]) for (let k = 0; k < 30; k++) {
+      const r = createRun(L, strokes(sol.map(([c, p]) => [c, c == 5 ? p.map((v, j) => j % 2 ? v + (rnd() - .5) * jit : v) : p])));
+      let st = 0, n = 0; while (!(st = step(r)) && n++ < TIMEOUT / DT); runs++;
+      const u = r._u, inside = L._rects.some(b => b._t == 0 && u._x > b._x && u._x < b._x + b._w && u._y > b._y && u._y < b._y + b._h);
+      if (st == 2 && ((u._y > H && u._x > 0 && u._x < W) || inside)) { sank++; if (sank < 4) console.log(`  L${i + 1} jitter ±${jit / 2}: fell through / stuck in a block at ${u._x.toFixed(1)},${u._y.toFixed(1)}`); }
+    }
+  }
+  ok(!sank, `${sank} of ${runs} jittered indigo runs fell through a block`);
+  summary.push(`phase robustness: ${runs} jittered indigo runs, ${sank} fell through`);
 }
 
 // Generator (optional module)
