@@ -2,12 +2,12 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **13,297 bytes** (limit 13,312; 15 bytes of headroom).
+- `dist/prism.zip` — **13,279 bytes** (limit 13,312; 33 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
   `dist/wavedash/index.html` (19,636 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,741 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,710 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -80,7 +80,7 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 - **Skip ›** in the HUD as well, offered when the level before is done (i.e. not on a level you
   skipped to).
 - Ten hints, the lobby subtitle and the test-hook names shortened to pay for it.
-  Zip 13,260 → 13,297 at -O2.
+  Zip 13,260 → 13,279 at -O2.
 
 ## Wavedash 2.5.1 (DECISIONS.md §22) — competition zip unchanged
 
@@ -217,7 +217,7 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 js13k competition build (roadroller -O2)
 module              source   min  deflate
 sim.js              15186   6101   3063
-levels.js            5178   4593   1883
+levels.js            5172   4587   1878
 gen.js               4472   1732    950
 audio.js             6803   2836   1577
 render.js            7474   4686   1710
@@ -227,7 +227,7 @@ ui.js                4827   2834   1287
 main.js             18503   8222   4282
 style.css            2794   2386    986
 
-bundle raw 65479, minified 31313, roadrolled 16128, html 18741, zip 13297 (zopfli)
+bundle raw 65473, minified 31307, roadrolled 16097, html 18710, zip 13279 (zopfli)
 ```
 
 ## What was cut or changed

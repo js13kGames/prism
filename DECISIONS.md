@@ -898,13 +898,13 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   on that line: 1 First Steps (bridge), 2 Ramp (support), 3 **Dash** (new), then 4 Boing, 5 Shelf
   (hang it — the v2.6 ceiling), 6 Make a Drop (needs orange to build the drop: 0 of 153 red dabs
   at tilts up to 0.4 u win it).
-- **Dash.** Start ledge 8 u above a low floor, 4.5 u of water between. Off the edge at walk speed
+- **Dash.** Start ledge 8 u above a low floor, 5 u of water between. Off the edge at walk speed
   the unicorn lands 2.6 u out (water); with orange painted to the edge it lands 5.8 u out. Speed
   eases back to walk at 30 u/s² on plain ground, so the orange has to reach within ~0.5 u of the
-  edge — the hint says so ("Orange is fast. Paint to the edge"). Helper `V2`: every other colour
-  is a 2 u ledge extension (yellow, indigo: a stub; blue: a glide; green: a fling) and crosses the
-  water; violet flips the unicorn into the sky. Swept: 79 orange dab positions win (all of them the
-  lesson), 0 violet, empty fails.
+  edge — the hint says so ("Orange is fast. Paint to the edge"). Helper `Y2` (the user vetoed violet
+  on level 3 as out of place): at 4.5 u a yellow stub plus a walk-off landed on the far floor's corner,
+  at 5 u it lands in the water (1 floating-yellow position in 4,984 still wins). Swept: 37 orange dab
+  positions win (all of them the lesson), empty fails.
 - **Angles is gone.** Its lesson — a tilted pad launches sideways — is the one thing every player
   discovers unprompted in Boing, and it is the launcher the testers complained about. Shelf still
   hangs a tilted pad, so the idea is not lost. Featured colours in suite A: level 3 orange, 4 red.
@@ -914,7 +914,7 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
 - **Bytes.** +≈70 for the swap and the button put -O1 at 13,342. Cut: the `__prism` test-hook
   names to one letter (t, s, k, l, r, u, n, g — tools and suite B updated), the title's idle
   subtitle, the lobby's "paired with a stranger" line, two CSS colours to short form, the Dash
-  hint. Competition zip **13,297 at -O2 (15 under)**. Next change will need to find bytes first;
+  hint. Competition zip **13,279 at -O2 (33 under)**. Next change will need to find bytes first;
   the candidates are the `c` clear shortcut (~18) and the race-result text shadow (~35).
 - **Wavedash.** `dist/wavedash/index.html` is rebuilt from this source. The publish itself needs
   `WAVEDASH_TOKEN`, which is not in this environment (`wavedash auth status`: not authenticated;

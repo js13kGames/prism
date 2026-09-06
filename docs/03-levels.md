@@ -56,8 +56,8 @@ Three orange lessons (bridge, ramp, dash), then three red ones (bounce, hang, bu
 2. **Ramp** — paint needs support: a slope from the floor to a ledge 5 u up. `O16 R4`.
    Solution: orange `[11,14, 24,9]` (21°).
 3. **Dash** — orange is speed: paint it up to the ledge edge and the dash carries the unicorn over
-   4.5 u of water that a walk-off cannot (over the 8 u fall a walk lands 2.6 u out, a dash 5.8 u). `O4 V2` —
-   violet is the one helper that cannot extend the ledge. Solution: orange `[8,8, 10,8]`. (v2.6; it replaced
+   5 u of water that a walk-off cannot (over the 8 u fall a walk lands 2.6 u out, a dash 5.8 u). `O4 Y2`: the
+   gap is wide enough that a 2 u yellow stub plus a walk-off still lands in the water. Solution: orange `[8,8, 10,8]`. (v2.6; it replaced
    Angles, whose lesson — a tilted pad launches sideways — players find by themselves in Boing.)
 4. **Boing** — red bounces when landed on. `R5 O6`. Red `[13,14, 16,14]` on the pit floor.
 5. **Shelf** — floating paint falls; hang a red pad from the ledge's wall, tilted so it
