@@ -5,10 +5,10 @@ export const SOLUTIONS = [
   [[1, [10, 12, 22, 12]]],
   // 2 Ramp: a walkable slope from the floor up to the ledge
   [[1, [11, 14, 24, 9]]],
-  // 3 Boing
+  // 3 Dash: orange right up to the edge; the dash carries the unicorn over the water
+  [[1, [8, 8, 10, 8]]],
+  // 4 Boing
   [[0, [13, 14, 16, 14]]],
-  // 4 Angles
-  [[0, [7, 12.5, 10, 14]]],
   // 5 Shelf: red pad hanging from the start ledge's wall, tilted to launch right
   [[0, [6.2, 8.4, 9.6, 9.6]]],
   // 6 Make a Drop: a tiny orange ramp gives the drop that makes red bounce

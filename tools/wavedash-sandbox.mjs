@@ -28,8 +28,8 @@ try {
   console.log('game frame:', fr.url());
   await fr.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 15000 });
   console.log('SDK present in frame:', await fr.evaluate(() => typeof self.Wavedash + ' initialized=' + (self.Wavedash && self.Wavedash.initialized)));
-  await fr.evaluate(() => __prism.load(0)); await fr.waitForSelector('[data-a=p]');
-  await fr.evaluate(s => __prism.setStrokes(s), SOLUTIONS[0]);
+  await fr.evaluate(() => __prism.l(0)); await fr.waitForSelector('[data-a=p]');
+  await fr.evaluate(s => __prism.s(s), SOLUTIONS[0]);
   await fr.click('[data-a=p]'); await fr.waitForSelector('.t h2', { timeout: 16000 });
   console.log('level 1 won');
   await new Promise(r => setTimeout(r, 2500));

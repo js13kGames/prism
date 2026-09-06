@@ -50,11 +50,16 @@ Physics facts used below (measured with `tools/lab.mjs`):
 
 ## Act 1 — Orange & Red, paint needs support (1–6)
 
+Three orange lessons (bridge, ramp, dash), then three red ones (bounce, hang, build a drop).
+
 1. **First Steps** — draw a bridge. `O14 Y6`. Solution: orange `[10,12, 22,12]`. (Was `R6`: a tilted red dab on the ledge cleared the gap without a bridge — v2.6.)
 2. **Ramp** — paint needs support: a slope from the floor to a ledge 5 u up. `O16 R4`.
    Solution: orange `[11,14, 24,9]` (21°).
-3. **Boing** — red bounces when landed on. `R5 O6`. Red `[13,14, 16,14]` on the pit floor.
-4. **Angles** — tilted red aims the bounce; the pad rests on spikes. `R8 O6`.
+3. **Dash** — orange is speed: paint it up to the ledge edge and the dash carries the unicorn over
+   4.5 u of water that a walk-off cannot (over the 8 u fall a walk lands 2.6 u out, a dash 5.8 u). `O4 V2` —
+   violet is the one helper that cannot extend the ledge. Solution: orange `[8,8, 10,8]`. (v2.6; it replaced
+   Angles, whose lesson — a tilted pad launches sideways — players find by themselves in Boing.)
+4. **Boing** — red bounces when landed on. `R5 O6`. Red `[13,14, 16,14]` on the pit floor.
 5. **Shelf** — floating paint falls; hang a red pad from the ledge's wall, tilted so it
    launches right over the water. `R5 O4`. Red `[6.2,8.4, 9.6,9.6]`. A 3.5 u ceiling (v2.6) stops the
    bounce from a red dab laid on the ledge top: the only cheap dabs left are pads hung off the ledge wall, the lesson.

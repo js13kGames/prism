@@ -34,7 +34,7 @@ try {
   const names = await Promise.all([A, B].map(p => p.$eval('.h span', s => s.textContent)));
   check(names[0] == names[1], 'both got the same level (' + names[0] + ')');
   await B.click('[data-a=bk]'); // B is in the HUD: ‹ leaves the room
-  await A.waitForFunction(() => !__prism.gs().length, null, { timeout: 10000 }); // the relay's '-id' removed the guest
+  await A.waitForFunction(() => !__prism.g().length, null, { timeout: 10000 }); // the relay's '-id' removed the guest
   check(true, 'the host sees the guest leave (peer list empty)');
   await A.click('[data-a=bk]');
 
@@ -46,18 +46,18 @@ try {
   await D.click('[data-a=qk]');
   for (const p of [C, D]) await wait(p, /Round 1/);
   for (const p of [C, D]) await p.waitForSelector('[data-a=p]', { timeout: 10000 });
-  const rooms = await Promise.all([C, D].map(p => p.evaluate(() => __prism.room)));
+  const rooms = await Promise.all([C, D].map(p => p.evaluate(() => __prism.r)));
   check(rooms[0] == rooms[1] && rooms[0] != 'QUIK', 'the pair moved to the same private room (' + rooms[0] + ')');
   const n2 = await Promise.all([C, D].map(p => p.$eval('.h span', s => s.textContent)));
   check(n2[0] == n2[1] && /Round 1 · 0–0/.test(n2[0]), 'same level, round 1 tag (' + n2[0] + ')');
   await E.click('[data-a=qk]'); await wait(E, /Looking for a rival/);
   await sleep(2000);
-  check(!/Round/.test(await ui(E)) && (await C.evaluate(() => __prism.gs())).length == 1, 'a third player waits alone and the pair never see them');
+  check(!/Round/.test(await ui(E)) && (await C.evaluate(() => __prism.g())).length == 1, 'a third player waits alone and the pair never see them');
   await E.click('[data-a=lv0]');
   // In-round presence: D learns that C is running, and nothing else.
   await C.click('[data-a=p]');
   await wait(D, /rival racing/);
-  check(true, 'D sees C running (presence only, no paint: gs=' + JSON.stringify(await D.evaluate(() => __prism.gs())) + ')');
+  check(true, 'D sees C running (presence only, no paint: gs=' + JSON.stringify(await D.evaluate(() => __prism.g())) + ')');
 } catch (e) { console.log('FAILED:', e.message.split('\n')[0]); errs.push(e.message); }
 console.log('errors:', errs.length ? errs : 'none');
 await b.close(); srv.kill(); process.exit(errs.length ? 1 : 0);

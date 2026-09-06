@@ -2,12 +2,12 @@
 
 ## Artefact
 
-- `dist/prism.zip` — **13,281 bytes** (limit 13,312; 31 bytes of headroom).
+- `dist/prism.zip` — **13,297 bytes** (limit 13,312; 15 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
   `dist/wavedash/index.html` (19,636 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,718 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,741 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -29,11 +29,14 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 
 ## Before submitting
 
-1. Upload `dist/prism.zip` as the draft's game file, open the preview in two tabs and
+1. Wavedash publish (needs your API key in this shell):
+   `$env:WAVEDASH_TOKEN = "wd_..."; wavedash build push -m "2.6 skip, eraser, act 1"; wavedash publish <BUILD_ID>`
+   (`dist/wavedash/index.html` is already built from this source.)
+2. Upload `dist/prism.zip` as the draft's game file, open the preview in two tabs and
    race once each way (Online → Quick match in both; Online → Create room / Join).
-2. The repository is at https://github.com/Arjun0014/PRISM (readable source in
+3. The repository is at https://github.com/Arjun0014/PRISM (readable source in
    `src/`; the build is reproducible with the commands in README.md).
-3. For the Wavedash category: `wavedash.toml` already points at the PRISM game
+4. For the Wavedash category: `wavedash.toml` already points at the PRISM game
    (`j97ddpqsg8v73xn49hp7pqfx0x8dr30z`, team CommendableBard71). Set `WAVEDASH_TOKEN` to your
    API key, then `node build.js -O2 --wavedash`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — the Wavedash build (platform SDK init,
@@ -71,7 +74,13 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
   red is not the lesson: level 1 and 7 lose their red helper (yellow / none), level 8 swaps orange
   for violet (any other colour extends the ledge), level 5 gets a ceiling. Every helper swap was
   swept with `tools/redsweep.mjs`; no stored solution changed.
-- Ten hints shortened to pay for it. Zip 13,260 → 13,281 at -O2.
+- **Act 1 rethought** (DECISIONS.md §24): three orange lessons — bridge, ramp and the new **Dash**
+  (orange to the edge carries the unicorn over water a walk-off cannot) — then three red ones. Angles
+  is retired; every player finds the tilted pad by themselves in Boing.
+- **Skip ›** in the HUD as well, offered when the level before is done (i.e. not on a level you
+  skipped to).
+- Ten hints, the lobby subtitle and the test-hook names shortened to pay for it.
+  Zip 13,260 → 13,297 at -O2.
 
 ## Wavedash 2.5.1 (DECISIONS.md §22) — competition zip unchanged
 
@@ -208,17 +217,17 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 js13k competition build (roadroller -O2)
 module              source   min  deflate
 sim.js              15186   6101   3063
-levels.js            5180   4595   1884
+levels.js            5178   4593   1883
 gen.js               4472   1732    950
 audio.js             6803   2836   1577
 render.js            7474   4686   1710
 net.js               2924   1119    686
 wavedash.js (stub)     94     62     32
-ui.js                4815   2833   1295
-main.js             18176   8218   4280
-style.css            2802   2394    988
+ui.js                4827   2834   1287
+main.js             18503   8222   4282
+style.css            2794   2386    986
 
-bundle raw 65142, minified 31304, roadrolled 16097, html 18718, zip 13281 (zopfli)
+bundle raw 65479, minified 31313, roadrolled 16128, html 18741, zip 13297 (zopfli)
 ```
 
 ## What was cut or changed

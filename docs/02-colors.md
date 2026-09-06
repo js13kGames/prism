@@ -45,7 +45,7 @@ Falling strokes never collide with the unicorn.
   (and still counts as "touched" for the gate). A drop of ~0.12 u is enough to bounce.
 - After a bounce the unicorn cannot re-trigger on the same stroke for 0.1 s, and any
   feather is dropped.
-- Intro level 3. Angled red pads redirect — level 4. Level 6 asks the player to build
+- Intro level 4. A tilted pad launches sideways (level 5 hangs one from a wall). Level 6 asks the player to build
   the drop.
 
 ## 1 — Orange — Dash  `#ffa64d`  glyph ⇒
@@ -55,7 +55,7 @@ Falling strokes never collide with the unicorn.
 - Momentum rule (applies to ALL surfaces): when the unicorn leaves the ground, its
   horizontal speed is kept. On non-orange, non-blue ground, horizontal speed eases
   back to `WALK` at 30 u/s².
-- Intro level 1 (a plain bridge), first taught as a gap-jumper in level 10.
+- Intro level 1 (a plain bridge), a ramp in 2, a gap-jumper in 3 (Dash) and again over water in 10.
 
 ## 2 — Yellow — Brittle  `#ffe14d`  glyph ✶
 

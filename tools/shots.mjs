@@ -13,8 +13,8 @@ await p.evaluate(() => localStorage.prism26_progress = JSON.stringify({ done: Ar
 await p.reload(); await p.waitForTimeout(300);
 await p.click('[data-a=go]'); await p.waitForTimeout(200); await p.screenshot({ path: 'test-results/v2-select.png' });
 for (const n of (process.argv[2] || '5,9,18,21,26,30').split(',').map(Number)) {
-  await p.evaluate(i => __prism.load(i), n - 1); await p.waitForTimeout(100);
-  await p.evaluate(s => __prism.setStrokes(s), SOLUTIONS[n - 1]); await p.waitForTimeout(100);
+  await p.evaluate(i => __prism.l(i), n - 1); await p.waitForTimeout(100);
+  await p.evaluate(s => __prism.s(s), SOLUTIONS[n - 1]); await p.waitForTimeout(100);
   await p.screenshot({ path: `test-results/v2-L${n}-draw.png` });
   await p.click('[data-a=p]'); await p.waitForTimeout(+(process.argv[3] || 1200));
   await p.screenshot({ path: `test-results/v2-L${n}-play.png` });

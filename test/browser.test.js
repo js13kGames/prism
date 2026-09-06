@@ -89,7 +89,7 @@ async function runBrowser(name) {
   const boot = async page => { await page.goto(URL); await page.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 10000 }); };
   const openLevel = async (page, n) => { await page.click('[data-a=go]'); await page.click(`[data-a=lv][data-v="${n}"]`); await page.waitForSelector('[data-a=p]'); };
   const drag = async (page, pts, touch) => {
-    const s = await Promise.all(pts.map(([x, y]) => page.evaluate(([x, y]) => __prism.toScreen(x, y), [x, y])));
+    const s = await Promise.all(pts.map(([x, y]) => page.evaluate(([x, y]) => __prism.t(x, y), [x, y])));
     if (touch && name == 'chromium') { // real touch input through CDP
       const cdp = await page.context().newCDPSession(page);
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: s[0][0], y: s[0][1] }] });
@@ -128,7 +128,7 @@ async function runBrowser(name) {
     await boot(page); await openLevel(page, 0);
     await page.click('[data-a=c][data-v="1"]');
     await drag(page, line(10, 12, 22, 12));
-    if (!await page.evaluate(() => __prism.strokes.length)) throw new Error('no stroke recorded');
+    if (!await page.evaluate(() => __prism.k.length)) throw new Error('no stroke recorded');
     await page.click('[data-a=p]'); await shots(page, 'play');
     await waitWin(page);
     const prog = await page.evaluate(() => JSON.parse(localStorage.prism26_progress));
@@ -146,7 +146,7 @@ async function runBrowser(name) {
     await page.click('[data-a=u]'); if (await inkWidth(page, 1) != w0) throw new Error('undo did not restore ink');
     await drag(page, line(10, 12, 16, 12)); await drag(page, line(10, 11, 14, 10));
     await page.click('[data-a=x]'); if (await inkWidth(page, 1) != w0) throw new Error('clear did not restore ink');
-    if (await page.evaluate(() => __prism.strokes.length)) throw new Error('clear left strokes');
+    if (await page.evaluate(() => __prism.k.length)) throw new Error('clear left strokes');
   });
 
   await test('erase-skip', async page => {
@@ -157,15 +157,19 @@ async function runBrowser(name) {
     await drag(page, line(10, 12, 16, 12)); await drag(page, line(10, 10, 16, 10));
     await page.click('[data-a=c][data-v="7"]');
     await drag(page, line(13, 10, 13, 10, 1));
-    if (await page.evaluate(() => __prism.strokes.length) != 1) throw new Error('eraser did not remove exactly the tapped stroke');
+    if (await page.evaluate(() => __prism.k.length) != 1) throw new Error('eraser did not remove exactly the tapped stroke');
     await drag(page, line(13, 12, 13, 12, 1));
-    if (await page.evaluate(() => __prism.strokes.length)) throw new Error('eraser left the other stroke');
+    if (await page.evaluate(() => __prism.k.length)) throw new Error('eraser left the other stroke');
     await page.evaluate(() => localStorage.prism26_progress = '{"done":[1]}');
     await boot(page);
     await page.click('[data-a=go]'); await page.waitForSelector('.a');
     const cls = await page.$$eval('[data-a=lv]', b => b.map(x => x.className));
     if (cls[2].includes(' l') || !cls[3].includes(' l')) throw new Error('skip rule: level 3 should be open and level 4 locked: ' + cls.slice(0, 4));
-    await page.click('[data-a=lv][data-v="2"]'); await page.waitForSelector('[data-a=p]');
+    await page.click('[data-a=lv][data-v="1"]'); await page.waitForSelector('[data-a=p]');
+    // HUD Skip: offered on level 2 (level 1 is done), it opens level 3; not offered there (level 2 was skipped).
+    await page.click('.h [data-a=nx]'); await page.waitForSelector('[data-a=p]');
+    if (!/Dash/.test(await page.textContent('.h'))) throw new Error('HUD Skip did not open level 3');
+    if (await page.$('.h [data-a=nx]')) throw new Error('Skip offered on a level reached by skipping');
     await page.click('[data-a=bk]'); await page.waitForSelector('.a');
     await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=co]');
     await page.click('[data-a=co]'); await page.waitForSelector('[data-a=p]');
@@ -175,9 +179,9 @@ async function runBrowser(name) {
   if (!QUICK) await test('all-levels', async page => {
     await boot(page);
     for (let i = 0; i < SOLUTIONS.length; i++) {
-      await page.evaluate(i => __prism.load(i), i);
+      await page.evaluate(i => __prism.l(i), i);
       await page.waitForSelector('[data-a=p]');
-      await page.evaluate(s => __prism.setStrokes(s), SOLUTIONS[i]);
+      await page.evaluate(s => __prism.s(s), SOLUTIONS[i]);
       await page.click('[data-a=p]');
       const t0 = Date.now();
       try { await waitWin(page); } catch (e) { await shots(page, `level${i + 1}-fail`); throw new Error(`level ${i + 1} did not win`); }
@@ -188,10 +192,10 @@ async function runBrowser(name) {
     if (prog.done.filter(Boolean).length != SOLUTIONS.length) throw new Error('not all levels marked done');
   });
 
-  await test('fail-path', async page => {
-    await boot(page); await page.evaluate(() => __prism.load(3)); await page.waitForSelector('[data-a=p]');
+  await test('fail-path', async page => { // level 3 (Dash): an empty run is in the water by 2.7 s
+    await boot(page); await page.evaluate(() => __prism.l(2)); await page.waitForSelector('[data-a=p]');
     await page.click('[data-a=p]'); await page.waitForSelector('[data-a=r]');
-    await page.waitForFunction(() => __prism.run && __prism.run.s === undefined ? true : true); // run object exists
+    await page.waitForFunction(() => __prism.u && __prism.u.s === undefined ? true : true); // run object exists
     await page.waitForSelector('[data-a=p]', { timeout: 8000 }); // back in draw phase after the fail flash
     await shots(page, 'fail');
     if (!await page.$('[data-a=c]')) throw new Error('palette missing after fail');
@@ -202,7 +206,7 @@ async function runBrowser(name) {
     await boot(page); await openLevel(page, 0);
     await page.click('[data-a=c][data-v="1"]');
     await drag(page, line(10, 12, 22, 12), true);
-    if (!await page.evaluate(() => __prism.strokes.length)) throw new Error('touch stroke not recorded');
+    if (!await page.evaluate(() => __prism.k.length)) throw new Error('touch stroke not recorded');
     await shots(page, 'mobile-draw');
     await page.click('[data-a=p]'); await waitWin(page);
     if (await page.evaluate(() => scrollY)) throw new Error('page scrolled');
@@ -222,8 +226,8 @@ async function runBrowser(name) {
     if (!await page.evaluate(() => document.querySelector('.t').scrollTop)) throw new Error('level grid did not scroll');
     await shots(page, 'mobile-landscape-select');
     await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=go]');
-    await page.evaluate(() => __prism.load(1)); await page.waitForSelector('[data-a=p]');
-    await page.evaluate(s => __prism.setStrokes(s), SOLUTIONS[1]);
+    await page.evaluate(() => __prism.l(1)); await page.waitForSelector('[data-a=p]');
+    await page.evaluate(s => __prism.s(s), SOLUTIONS[1]);
     await page.click('[data-a=p]'); await waitWin(page);
   }, { viewport: { width: 844, height: 390 }, ...mobile });
 
@@ -243,7 +247,7 @@ async function runBrowser(name) {
     page2.on('pageerror', e => { throw new Error('page2 error: ' + e.message); });
     let spy;
     try {
-      for (const p of [page, page2]) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); }
+      for (const p of [page, page2]) { await boot(p); await p.evaluate(u => __prism.n.url = u, `ws://localhost:${relay.port}/{room}`); }
       // The host has played a level before going online: the lobby must not mistake that level for a live round.
       await openLevel(page, 0); await page.click('[data-a=bk]'); await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=on]');
       const at = (label, pr) => pr.catch(e => { throw new Error(label + ': ' + String(e.message).slice(0, 100)); });
@@ -273,7 +277,7 @@ async function runBrowser(name) {
       await drag(guest, line(.5, 2, 2.5, 2)); // sky above the start platform: never geometry in generated levels
       await guest.click('[data-a=p]');
       await at('rival racing', host.waitForFunction(() => /rival racing/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
-      const leaked = await host.evaluate(() => __prism.gs());
+      const leaked = await host.evaluate(() => __prism.g());
       if (leaked.some(g => g[0] || g[1])) throw new Error('rival paint leaked mid-round: ' + JSON.stringify(leaked));
 
       // A third client wins the round. Only now may its paint arrive, and it arrives as a running replay.
@@ -283,7 +287,7 @@ async function runBrowser(name) {
       for (const p of [page, page2]) {
         await at('round result', p.waitForFunction(() => /Round lost/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 }));
         if (!/You 0 – 1 Rival/.test(await txt(p))) throw new Error('result screen has no score: ' + await txt(p));
-        const gs = await p.evaluate(() => __prism.gs());
+        const gs = await p.evaluate(() => __prism.g());
         if (!gs.some(g => g[0] == 1 && g[1])) throw new Error('winner replay missing: ' + JSON.stringify(gs));
       }
       if (await guest.$('[data-a=st]')) throw new Error('guest was offered the round button');
@@ -329,7 +333,7 @@ async function runBrowser(name) {
       // Leaving the room leaves the rivals behind: their paint must not follow you into a solo level.
       await host.click('[data-a=bk]'); await host.waitForSelector('[data-a=go]', { timeout: 3000 });
       await openLevel(host, 0);
-      const stowaways = await host.evaluate(() => __prism.gs());
+      const stowaways = await host.evaluate(() => __prism.g());
       if (stowaways.length) throw new Error('rivals followed the player out of the room: ' + JSON.stringify(stowaways));
       await shots(host, 'after-race-solo');
     } finally { try { spy && spy.close(); } catch (e) { } relay.close(); }
@@ -342,7 +346,7 @@ async function runBrowser(name) {
     const txt = p => p.$eval('#ui', u => u.textContent);
     const wait = (p, re, ms = 5000) => p.waitForFunction(re => new RegExp(re).test(document.querySelector('#ui').textContent), re.source, { timeout: ms });
     try {
-      for (const p of pages) { await boot(p); await p.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`); await p.click('[data-a=on]'); }
+      for (const p of pages) { await boot(p); await p.evaluate(u => __prism.n.url = u, `ws://localhost:${relay.port}/{room}`); await p.click('[data-a=on]'); }
       const [a, b, c] = pages;
       await a.click('[data-a=qk]');
       await wait(a, /Looking for a rival/);
@@ -357,14 +361,14 @@ async function runBrowser(name) {
       const names = await Promise.all([a, b].map(p => p.$eval('.h span', s => s.textContent)));
       if (names[0] != names[1]) throw new Error('the pair got different levels: ' + names);
       if (!/Round 1 · 0–0/.test(names[0])) throw new Error('HUD has no round tag: ' + names[0]);
-      const rooms = await Promise.all([a, b].map(p => p.evaluate(() => __prism.room)));
+      const rooms = await Promise.all([a, b].map(p => p.evaluate(() => __prism.r)));
       if (rooms[0] != rooms[1] || rooms[0] == 'QUIK') throw new Error('the pair did not move to a private room: ' + rooms);
       // The third player finds the queue empty and waits; the racing pair never hear from them.
       await c.click('[data-a=qk]');
       await wait(c, /Looking for a rival/);
       await sleep(1000);
       if (/Round/.test(await txt(c)) || await c.$('[data-a=p]')) throw new Error('a third player was pulled into the pair\'s race');
-      if ((await a.evaluate(() => __prism.gs())).length != 1) throw new Error('the pair saw the third player');
+      if ((await a.evaluate(() => __prism.g())).length != 1) throw new Error('the pair saw the third player');
       // The pair's match runs as usual: the senior of the two hosts, and the rematch needs both.
       await c.click('[data-a=lv0]');
       const spyWin = async () => { const s = new WebSocket(`ws://localhost:${relay.port}/prism26-${rooms[0]}`); await new Promise(r => s.onopen = r); return s; };
@@ -394,13 +398,13 @@ async function runBrowser(name) {
     const seed = Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 864e5), name = () => page.$eval('.h span', s => s.textContent);
     await page.click('[data-a=dy]'); await page.waitForSelector('[data-a=p]');
     if (/Stage 2/.test(await name())) throw new Error('the daily opened on stage 2');
-    await page.evaluate(s => __prism.setStrokes(s), gen(seed, 1)[1]); await page.click('[data-a=p]');
+    await page.evaluate(s => __prism.s(s), gen(seed, 1)[1]); await page.click('[data-a=p]');
     await page.waitForFunction(() => /Stage 2/.test(document.querySelector('#ui').textContent), null, { timeout: 30000 });
     await shots(page, 'daily-stage2-card');
     await page.waitForSelector('[data-a=p]', { timeout: 5000 });
     if (!/Stage 2/.test(await name())) throw new Error('stage 2 HUD has no Stage 2 tag: ' + await name());
     if (await page.evaluate(() => localStorage.prism26_daily) == String(seed)) throw new Error('the daily was marked done after stage 1');
-    await page.evaluate(s => __prism.setStrokes(s), gen(seed, 3)[1]); await page.click('[data-a=p]');
+    await page.evaluate(s => __prism.s(s), gen(seed, 3)[1]); await page.click('[data-a=p]');
     await page.waitForFunction(() => /Daily done/.test(document.querySelector('#ui').textContent), null, { timeout: 30000 });
     if (await page.evaluate(() => localStorage.prism26_daily) != String(seed)) throw new Error('the daily was not marked done after stage 2');
     await shots(page, 'daily-done');
@@ -409,9 +413,9 @@ async function runBrowser(name) {
   await test('resize', async page => {
     await boot(page); await openLevel(page, 0);
     await page.setViewportSize({ width: 500, height: 700 }); await sleep(100);
-    const a = await page.evaluate(() => __prism.toScreen(32, 18));
+    const a = await page.evaluate(() => __prism.t(32, 18));
     await page.setViewportSize({ width: 1200, height: 500 }); await sleep(100);
-    const b = await page.evaluate(() => __prism.toScreen(32, 18));
+    const b = await page.evaluate(() => __prism.t(32, 18));
     if (a[0] == b[0]) throw new Error('canvas did not re-fit');
     if (b[0] > 1200 || b[1] > 500) throw new Error('world exceeds viewport');
   });
@@ -430,7 +434,7 @@ async function runBrowser(name) {
     const openRoom = async p => {
       const fr = await (await p.waitForSelector('iframe')).contentFrame();
       await fr.waitForFunction(() => /PRISM/.test(document.querySelector('#ui').textContent), null, { timeout: 10000 });
-      await fr.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`);
+      await fr.evaluate(u => __prism.n.url = u, `ws://localhost:${relay.port}/{room}`);
       await fr.click('[data-a=on]'); await fr.click('[data-a=cr]');
       await fr.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
       return [fr, await fr.$eval('#ui b', b => b.textContent)];
@@ -509,8 +513,8 @@ async function runBrowser(name) {
     await fr.waitForFunction(() => JSON.parse(localStorage.prism26_progress || '{}').done?.[2] == 1, null, { timeout: 5000 });
     await fr.waitForFunction(() => /1 \/ 40 levels/.test(document.querySelector('#ui').textContent), null, { timeout: 3000 });
     await shots(page, 'wavedash-title');
-    await fr.evaluate(() => __prism.load(0)); await fr.waitForSelector('[data-a=p]');
-    await fr.evaluate(s => __prism.setStrokes(s), SOLUTIONS[0]);
+    await fr.evaluate(() => __prism.l(0)); await fr.waitForSelector('[data-a=p]');
+    await fr.evaluate(s => __prism.s(s), SOLUTIONS[0]);
     await fr.click('[data-a=p]'); await fr.waitForSelector('.t h2', { timeout: 16000 });
     // The first setAchievement returned false (SDK not ready): the retry a second later must land it.
     await fr.waitForFunction(() => self.Wavedash.calls.filter(c => c[0] == 'ach' && c[1] == 'gem').length > 1, null, { timeout: 5000 });
@@ -546,7 +550,7 @@ async function runBrowser(name) {
   await test('room-link', async (page, ctx) => {
     const relay = await startRelay();
     try {
-      await boot(page); await page.evaluate(u => __prism.net.url = u, `ws://localhost:${relay.port}/{room}`);
+      await boot(page); await page.evaluate(u => __prism.n.url = u, `ws://localhost:${relay.port}/{room}`);
       await page.click('[data-a=on]'); await page.click('[data-a=cr]');
       await page.waitForFunction(() => /Room/.test(document.querySelector('#ui').textContent), null, { timeout: 5000 });
       const code = await page.$eval('#ui b', b => b.textContent);

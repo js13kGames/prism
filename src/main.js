@@ -41,7 +41,8 @@ function hud() {
   if ((scr != 2 && scr != 3) || !L || over) return;
   if (!run) { preview(); setSeq(strokes.map(s => [s._c, s._p[0]])); } // the canvas is the melody (audio.js)
   const tag = scr == 3 ? 'Round ' + round + ' · ' + mine() + '–' + theirs() + (ghosts.some(g => g._go) ? ' · rival racing' : '') : gd > 2 ? 'Stage 2' : '';
-  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, played ? '' : L._hint, snd, tag));
+  // Skip is offered when the next level would be open under the grid's rule (lv): not on a level reached by skipping.
+  show(hudUI(L, col, L._ink.map((v, c) => inkLeft(c)), !!run, played ? '' : L._hint, snd, tag, li < LEVELS.length - 1 && (!li || prog.done[li - 1]))); // (generated levels have li == LEVELS.length)
 }
 
 // Load level i, or the daily/online generated level when i == LEVELS.length (from `seed`, at difficulty d).
@@ -285,7 +286,8 @@ function raceWin(id, t) {
   showRes();
 }
 
-window.__prism = { net: NET, get room() { return room; }, gs: () => ghosts.map(g => [g._s.length, !!g._run]), toScreen: (x, y) => [ox + x * sc, oy + y * sc], load: i => (scr = 2, loadLevel(i)), setStrokes: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get run() { return run; }, get strokes() { return strokes; } };
+// Test hooks (suite B, tools/): n net, r room, g ghosts [strokes, running], t world→screen, l load level, s set strokes, u run, k strokes.
+window.__prism = { n: NET, get r() { return room; }, g: () => ghosts.map(g => [g._s.length, !!g._run]), t: (x, y) => [ox + x * sc, oy + y * sc], l: i => (scr = 2, loadLevel(i)), s: sol => { strokes = sol.map(([c, p]) => mkStroke(c, p)); hud(); }, get u() { return run; }, get k() { return strokes; } };
 goTitle();
 if (location.hash.startsWith('#r=')) goLobby();
 requestAnimationFrame(frame);

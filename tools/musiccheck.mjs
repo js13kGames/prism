@@ -9,7 +9,7 @@ await p.addInitScript(() => { window.__osc = 0; const o = AudioContext.prototype
 await p.goto('http://localhost:8097/'); await p.waitForTimeout(300);
 await p.click('[data-a=go]'); await p.waitForTimeout(1500);
 const calm = await p.evaluate(() => __osc);
-await p.click('[data-a=lv][data-v="0"]'); await p.evaluate(() => __prism.setStrokes([[1, [10, 12, 22, 12]]])); await p.click('[data-a=p]');
+await p.click('[data-a=lv][data-v="0"]'); await p.evaluate(() => __prism.s([[1, [10, 12, 22, 12]]])); await p.click('[data-a=p]');
 await p.waitForTimeout(2000); const lively = await p.evaluate(() => __osc) - calm;
 await p.waitForSelector('.t h2', { timeout: 10000 }); await p.waitForTimeout(300);
 console.log(`oscillators in 1.5 s calm: ${calm}, in 2 s lively: ${lively}, total: ${await p.evaluate(() => __osc)}, ctx state: ${await p.evaluate(() => typeof AudioContext)} | errors:`, errs);

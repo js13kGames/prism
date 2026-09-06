@@ -11,7 +11,7 @@ const only = args.filter(a => /^\d+$/.test(a)).map(Number);
 let fails = 0, warns = 0;
 const ok = (cond, msg) => { if (!cond) { fails++; console.log('  FAIL ' + msg); } };
 const warn = msg => { warns++; console.log('  warn ' + msg); };
-const FEATURED = { 1: 1, 3: 0, 7: 2, 11: 3, 15: 4, 19: 5, 23: 6 };
+const FEATURED = { 1: 1, 3: 1, 4: 0, 7: 2, 11: 3, 15: 4, 19: 5, 23: 6 };
 const NAMES = 'red orange yellow green blue indigo violet'.split(' ');
 const strokes = sol => sol.map(([c, p]) => mkStroke(c, p));
 

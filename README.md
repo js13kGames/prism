@@ -27,7 +27,7 @@ edges. All the agency is in the paint.
 
 40 hand-made levels in eight acts teach the colours one at a time, then combine them. A level
 unlocks when the one before it *or the one before that* is done, so a level that has you stuck
-can be skipped (just not two in a row); **Continue** on the title picks up past your furthest
+can be skipped with the HUD's **Skip ›** button or from the grid (just not two in a row); **Continue** on the title picks up past your furthest
 gem. **Daily** is two generated
 levels every day (same for everyone), the second one tighter. **Online** is a best-of-five race with the levels
 getting harder each round: everyone in a room gets
@@ -48,6 +48,7 @@ round, and a rematch needs both players to press Rematch.
 | **Z** / **C** | undo / clear |
 | **Space** | Play / Rewind |
 | **Esc** | back |
+| **Skip ›** in the HUD | skip this level (when the one before it is done) |
 
 Works in portrait and landscape; the world is letterboxed, the palette stays ≥ 44 px.
 

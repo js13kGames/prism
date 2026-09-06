@@ -10,7 +10,7 @@ export const GLYPH = '↑⇒✶⋮❋⇢⟳';
 export const titleUI = (snd, done, stars, n, dd) => `<div class="t v"><button class=z data-a=sn>${snd ? '🔊' : '🔇'}</button><h1>PRISM</h1><p>Paint rainbow paths. A very stupid unicorn walks them.</p>
 <button class="b w" data-a=co>${done ? 'Continue' : 'Play'}</button>
 <div class=n><button data-a=go>Levels</button><button data-a=on>Online</button><button data-a=dy>Daily${dd ? ' ✓' : ''}</button></div>
-<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · a daily seed · online races`}</p></div>`;
+<p class=g>${done ? `${done} / ${n} levels · ★ ${stars}` : `${n} levels · daily · online races`}</p></div>`;
 
 // Level grid: rainbow-coloured dots, locked ones grey, stars marked. prog = {done, stars}.
 export function selectUI(prog, n) {
@@ -25,11 +25,11 @@ export function selectUI(prog, n) {
 
 // In-game HUD. ink = remaining per colour, L = level, col = selected, play = run active, hint shown until
 // first play, tag = race status (round, score, whether a rival is running) shown before the level name.
-export function hudUI(L, col, ink, play, hint, snd, tag) {
+export function hudUI(L, col, ink, play, hint, snd, tag, skip) {
   let pal = '';
   for (let c = 0; c < 7; c++) if (L._ink[c]) pal += `<button class="k${c == col ? ' s' : ''}" data-a=c data-v=${c} style=background:${COLS[c]}>${GLYPH[c]}<i><b id=i${c} style=width:${100 * ink[c] / L._ink[c]}%></b></i></button>`;
   pal += `<button class="k${col == 7 ? ' s' : ''}" data-a=c data-v=7 style=background:#eee>⌫</button>`; // eraser: tap a stroke to remove it
-  return `<div class=h><button data-a=bk>‹</button><span>${tag ? tag + ' · ' : ''}${L._name}${hint ? ' · ' + hint : ''}</span><button data-a=sn${snd ? '' : ' class=g'}>${snd ? '🔊' : '🔇'}</button></div>` +
+  return `<div class=h><button data-a=bk>‹</button><span>${tag ? tag + ' · ' : ''}${L._name}${hint ? ' · ' + hint : ''}</span>${skip ? '<button data-a=nx>Skip ›</button>' : ''}<button data-a=sn${snd ? '' : ' class=g'}>${snd ? '🔊' : '🔇'}</button></div>` +
     (play ? `<div class=r><button class=b data-a=r>⟲ Rewind</button></div>` :
       `<div class=r>${pal}<button data-a=u>↶</button><button data-a=x>✕</button><button class=b data-a=p>▶ Play</button></div>`);
 }
@@ -42,7 +42,7 @@ export const winUI = (used, total, star, last, extra) => `<div class=t><h2>${ext
 // code and count, Copy / Start / Leave. q = waiting in the quick-match queue: no code to share, just Leave.
 export const lobbyUI = (status, code, n, host, q) => `<div class=t><h2>Online race</h2><p>${status}</p>${code && !q ? `<p>Room <b>${code}</b> · ${n} player${n == 1 ? '' : 's'}</p>` : ''}
 ${code ? `<div>${q ? '' : `<button data-a=cp>Copy ${onWD() ? 'code' : 'link'}</button>`}${host ? '<button class=b data-a=st>Start</button>' : ''}<button data-a=lv0>Leave</button></div>` :
-    `<button class="b w" data-a=qk>Quick match</button><p class=g>paired with a stranger</p><p>— or race a friend —</p><div class=n><button data-a=cr>Create room</button></div><div class=n><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button></div>`}
+    `<button class="b w" data-a=qk>Quick match</button><p>— or race a friend —</p><div class=n><button data-a=cr>Create room</button></div><div class=n><input id=j maxlength=4 placeholder=CODE><button data-a=jn>Join</button></div>`}
 <button data-a=bk>Back</button></div>`;
 
 // Round start card: the solid menu backdrop, because the rainbow h1 is unreadable over a bright sky.

@@ -5,8 +5,8 @@ export const LEVELS = [
   // Act 1 — Orange & Red, and paint that needs support
   'N First Steps|H Draw a bridge, then Play|S 2 12 1|G 28 11|R 0 12 10 6|R 22 12 10 6|I O14 Y6',
   'N Ramp|H Start the paint on the ground|S 2 14 1|G 28 8.4|R 0 14 24 4|R 24 9 8 9|I O16 R4',
+  'N Dash|H Orange is fast. Paint to the edge|S 2 8 1|G 28 15|R 0 8 10 10|W 10 16 4.5 2|R 14.5 16 17.5 2|I O4 V2',
   'N Boing|H Red bounces when landed on|S 2 8 1|G 28 5|R 0 8 12 10|R 12 14 6 4|R 18 6 14 12|I R5 O6',
-  'N Angles|H Angled red launches sideways|S 2 8 1|G 28 8|R 0 8 6 10|R 6 14 12 4|K 8 13.5 8 .5|R 22 9 10 9|I R8 O6',
   'N Shelf|H Loose paint falls. Hang it on a wall|S 2 5 1|G 28 7|R 0 5 6 13|W 6 16 8 2|R 14 8 18 10|R 0 0 32 3.5|I R5 O4',
   'N Make a Drop|H Red needs a drop. Build one|S 2 14 1|G 19 4.6|R 0 14 32 4|I O7 R5',
   // Act 2 — Yellow
