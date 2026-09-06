@@ -29,9 +29,8 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 
 ## Before submitting
 
-1. Wavedash publish (needs your API key in this shell):
-   `$env:WAVEDASH_TOKEN = "wd_..."; wavedash build push -m "2.6 skip, eraser, act 1"; wavedash publish <BUILD_ID>`
-   (`dist/wavedash/index.html` is already built from this source.)
+1. Wavedash 2.6 is published (ids below). To publish again: `WAVEDASH_TOKEN` in the shell, `node build.js -O2 --wavedash`,
+   `wavedash build push -m "..."`, `wavedash publish <BUILD_ID> --yes`.
 2. Upload `dist/prism.zip` as the draft's game file, open the preview in two tabs and
    race once each way (Online → Quick match in both; Online → Create room / Join).
 3. The repository is at https://github.com/Arjun0014/PRISM (readable source in
@@ -41,6 +40,9 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    API key, then `node build.js -O2 --wavedash`, `wavedash build push`, `wavedash publish <BUILD_ID>`.
    The upload is `dist/wavedash/index.html` — the Wavedash build (platform SDK init,
    achievements, leaderboards), which is **not** the file inside the zip.
+   **2.6 published 2026-09-06**: build `mn74d6nw9e9hn7jqxcz771wcr98dw6yn`, release
+   `rx77vb5pnw5bq5eyzmgzpfgvsx8dwjj6`, https://wavedash.com/games/prism — the 19,695-byte Wavedash
+   build (skip, eraser, act 1 with Dash). The competition zip is `dist/prism.zip` (13,279). Earlier releases:
    **2.5.1 published 2026-09-06**: build `mn7905yx8jw4qvfjca01jt4add8dt8jw`, release
    `rx73c9srcs4c6t18a1sg9ac3x58dvd4t`, https://wavedash.com/games/prism — the 19,636-byte Wavedash
    build (achievements and leaderboards actually reach the portal; cloud saves; identity; presence).
