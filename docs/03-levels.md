@@ -50,20 +50,22 @@ Physics facts used below (measured with `tools/lab.mjs`):
 
 ## Act 1 — Orange & Red, paint needs support (1–6)
 
-1. **First Steps** — draw a bridge. `O14 R6`. Solution: orange `[10,12, 22,12]`.
+1. **First Steps** — draw a bridge. `O14 Y6`. Solution: orange `[10,12, 22,12]`. (Was `R6`: a tilted red dab on the ledge cleared the gap without a bridge — v2.6.)
 2. **Ramp** — paint needs support: a slope from the floor to a ledge 5 u up. `O16 R4`.
    Solution: orange `[11,14, 24,9]` (21°).
 3. **Boing** — red bounces when landed on. `R5 O6`. Red `[13,14, 16,14]` on the pit floor.
 4. **Angles** — tilted red aims the bounce; the pad rests on spikes. `R8 O6`.
 5. **Shelf** — floating paint falls; hang a red pad from the ledge's wall, tilted so it
-   launches right over the water. `R5 O4`. Red `[6.2,8.4, 9.6,9.6]`.
+   launches right over the water. `R5 O4`. Red `[6.2,8.4, 9.6,9.6]`. A 3.5 u ceiling (v2.6) stops the
+   bounce from a red dab laid on the ledge top: the only cheap dabs left are pads hung off the ledge wall, the lesson.
 6. **Make a Drop** — red needs a drop, so build one: a short orange ramp ends in the
    air; the unicorn steps off it onto red. `O7 R5`.
 
 ## Act 2 — Yellow (7–10)
 
-7. **Long Way** — chain of 2.5 u yellow strokes over 16 u of water. `Y30 O6 R4`.
-8. **Trapdoor** — a yellow bridge that crumbles under the unicorn onto a pedestal. `Y8 O4`.
+7. **Long Way** — chain of 2.5 u yellow strokes over 16 u of water. `Y30 O6` (red dropped in v2.6: one tilted dab flew the whole 16 u).
+8. **Trapdoor** — a yellow bridge that crumbles under the unicorn onto a pedestal. `Y8 V4` (v2.6: orange made a
+   dash hop over the spikes; violet is the one helper that cannot serve as a ledge extension).
 9. **Drawbridge** — an orange bar rests only on a yellow stub; when the stub crumbles
    the bar (and the unicorn) drop onto two pillars over spikes, and the unicorn runs
    back under the start ledge to the gem. `Y3 O16`.
@@ -134,3 +136,22 @@ so the last act asks for cleaner lines. Every stored solution still fits with �
 - `tools/lab.mjs` measures physics facts (slopes, glide, bounce).
 - `tools/gentrace.mjs <seed>` traces a generated level's reference solution.
 - `tools/play.html` is a browser authoring page (draw, Solve-check, Export).
+
+## Helper colours and the single-dab sweep (v2.6)
+
+Every level carries at least two ink colours (the test enforces it): the lesson's colour plus a
+helper, which is also what pads the ink total so a star is possible. A helper must not be a
+second answer. `tools/redsweep.mjs` tries a 2 u dab of every colour the level offers, at every
+half-unit position and three tilts, and reports which win; `tools/lvfix.mjs <level> '<string>'`
+does the same for a candidate string and also runs the stored solution. Two facts drive it:
+
+- **A tilted red dab is a launcher.** Walking down a 2 u pad tilted 0.6 u gives the 0.12 u
+  drop red needs, and an angled bounce leaves at ~13 u/s sideways and rises ~10 u — enough to
+  clear most of a level from the start ledge. Red belongs only where red is the lesson.
+- **Any paint is a ledge extension.** Orange, yellow, green, blue and indigo dabs at a ledge
+  end all move the walk-off point; the sim has no fall damage, so any spot a crumble can drop the
+  unicorn onto, a shorter bridge ending just before it can too. Violet is the only colour that
+  cannot be walked off (it flips gravity first).
+
+Progress rule (main.js `lv`): a level opens when the one before it or the one before that is
+done, so one level can be skipped at a time; Continue opens the level after the furthest gem.

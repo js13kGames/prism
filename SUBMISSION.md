@@ -1,13 +1,13 @@
-# SUBMISSION.md — PRISM (js13kGames 2026), version 2.5
+# SUBMISSION.md — PRISM (js13kGames 2026), version 2.6
 
 ## Artefact
 
-- `dist/prism.zip` — **13,260 bytes** (limit 13,312; 52 bytes of headroom).
+- `dist/prism.zip` — **13,281 bytes** (limit 13,312; 31 bytes of headroom).
 - Built with `node build.js -O2` (roadroller thorough search). This is the **competition
   build**: it carries no Wavedash code at all (DECISIONS.md §18).
 - The **Wavedash build** is separate: `node build.js -O2 --wavedash` →
   `dist/wavedash/index.html` (19,636 bytes; not size-limited, never submitted to the form).
-- `unzip -l`: exactly one entry, `index.html` (18,688 bytes). `unzip -t`: OK.
+- `unzip -l`: exactly one entry, `index.html` (18,718 bytes). `unzip -t`: OK.
   Central directory: 1 entry. CRC verified by `tools/checks.mjs`.
 - No external resources and no external scripts; the only network endpoint in the
   code is the relay `wss://relay.js13kgames.com/prism/{room}`, opened only when the
@@ -58,6 +58,20 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
    https://wavedash.com/games/prism (superseded by the 2.2.1 release below; the same build as `dist/prism.zip`).
    **2.2.1 published 2026-09-04**: build `mn7771r796s8xbcsde1pffjsz18drmv2`, release `rx76wcagkakyc2h31z6bexwd5s8drj2n` —
    the 13,209-byte build that is `dist/prism.zip`.
+
+## What changed in version 2.6 (DECISIONS.md §23) — playtest feedback
+
+- **Skip a level.** A level opens when the one before it or the one before that is done, so any
+  single level can be skipped from the grid (never two in a row). Continue opens the level after
+  the furthest gem instead of the first gap.
+- **Eraser.** A ⌫ entry in the palette (key 8): tap a stroke to remove just that one. Undo and
+  Clear stay.
+- **The red launcher.** A tilted 2 u red dab on flat ground launches the unicorn across most of
+  an early level, which is what testers meant by "little red bounce at the start". Fixed only where
+  red is not the lesson: level 1 and 7 lose their red helper (yellow / none), level 8 swaps orange
+  for violet (any other colour extends the ledge), level 5 gets a ceiling. Every helper swap was
+  swept with `tools/redsweep.mjs`; no stored solution changed.
+- Ten hints shortened to pay for it. Zip 13,260 → 13,281 at -O2.
 
 ## Wavedash 2.5.1 (DECISIONS.md §22) — competition zip unchanged
 
@@ -194,17 +208,17 @@ of three rounds, each on a fresh level; no paint crosses the relay until someone
 js13k competition build (roadroller -O2)
 module              source   min  deflate
 sim.js              15186   6101   3063
-levels.js            5223   4638   1905
-gen.js               3932   1696    921
+levels.js            5180   4595   1884
+gen.js               4472   1732    950
 audio.js             6803   2836   1577
 render.js            7474   4686   1710
-net.js               2308   1174    714
-wavedash.js (stub)     37     30     22
-ui.js                3871   2471   1163
-main.js             15581   7416   3905
+net.js               2924   1119    686
+wavedash.js (stub)     94     62     32
+ui.js                4815   2833   1295
+main.js             18176   8218   4280
 style.css            2802   2394    988
 
-bundle raw 60433, minified 30423, roadrolled 15744, html 18365, zip 13012 (zopfli)
+bundle raw 65142, minified 31304, roadrolled 16097, html 18718, zip 13281 (zopfli)
 ```
 
 ## What was cut or changed

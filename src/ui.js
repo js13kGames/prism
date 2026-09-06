@@ -16,7 +16,7 @@ export const titleUI = (snd, done, stars, n, dd) => `<div class="t v"><button cl
 export function selectUI(prog, n) {
   let d = '';
   for (let i = 0; i < n; i++) {
-    const open = !i || prog.done[i - 1], a = ACT.filter(v => v <= i).length - 1;
+    const open = !i || prog.done[i - 1] || prog.done[i - 2], a = ACT.filter(v => v <= i).length - 1; // one level may be skipped (main.js lv)
     if (i && ACT.includes(i)) d += '<i></i>'; // act break: each act gets its own row
     d += `<button class="d${open ? '' : ' l'}${open && !prog.done[i] ? ' g' : ''}" data-a=lv data-v=${i} style="background:${open ? COLS[AC[a]] || '#fff' : ''}">${i + 1}${prog.stars[i] ? '★' : ''}</button>`;
   }
@@ -28,6 +28,7 @@ export function selectUI(prog, n) {
 export function hudUI(L, col, ink, play, hint, snd, tag) {
   let pal = '';
   for (let c = 0; c < 7; c++) if (L._ink[c]) pal += `<button class="k${c == col ? ' s' : ''}" data-a=c data-v=${c} style=background:${COLS[c]}>${GLYPH[c]}<i><b id=i${c} style=width:${100 * ink[c] / L._ink[c]}%></b></i></button>`;
+  pal += `<button class="k${col == 7 ? ' s' : ''}" data-a=c data-v=7 style=background:#eee>⌫</button>`; // eraser: tap a stroke to remove it
   return `<div class=h><button data-a=bk>‹</button><span>${tag ? tag + ' · ' : ''}${L._name}${hint ? ' · ' + hint : ''}</span><button data-a=sn${snd ? '' : ' class=g'}>${snd ? '🔊' : '🔇'}</button></div>` +
     (play ? `<div class=r><button class=b data-a=r>⟲ Rewind</button></div>` :
       `<div class=r>${pal}<button data-a=u>↶</button><button data-a=x>✕</button><button class=b data-a=p>▶ Play</button></div>`);

@@ -1,5 +1,5 @@
 // Boot, state machine, screens, HUD, input. Talks to sim.js (pure) and render.js (canvas).
-import { parseLevel, createRun, step, mkStroke, inSolid, strokeLen, COLS, DT, W, H, R, min, max, hypot } from './sim.js';
+import { parseLevel, createRun, step, mkStroke, inSolid, near, strokeLen, COLS, DT, W, H, R, min, max, hypot } from './sim.js';
 import { LEVELS } from './levels.js';
 import { drawWorld, drawStrokes, drawGem, drawStart, drawUnicorn, drawParts, spawn, PARTS } from './render.js';
 import { titleUI, selectUI, hudUI, winUI, lobbyUI, cardUI, raceUI } from './ui.js';
@@ -76,9 +76,10 @@ const act = {
   go: goSelect, bk: () => scr == 2 && !daily ? goSelect() : goTitle(), on: goLobby,
   dy: () => loadLevel(LEVELS.length, daySeed(), 1),
   sn: () => { setSnd(prog.snd = snd ? 0 : 1); save(); scr ? hud() : title(); },
-  lv: v => { v = +v; if (!v || prog.done[v - 1]) loadLevel(v); },
-  co: () => { let i = 0; while (i < LEVELS.length - 1 && prog.done[i]) i++; loadLevel(i); },
-  c: v => { col = +v; hud(); playNote(col); },
+  // A level opens once the one before it — or the one before that — is done: any level can be skipped, but not two in a row.
+  lv: v => { v = +v; if (!v || prog.done[v - 1] || prog.done[v - 2]) loadLevel(v); },
+  co: () => loadLevel(min(prog.done.lastIndexOf(1) + 1, LEVELS.length - 1)), // past the furthest gem, not the first gap
+  c: v => { col = +v; hud(); playNote(col); }, // 7 = the eraser (its note is C an octave up)
   u: () => { if (!run && strokes.length) { strokes.pop(); hud(); } },
   x: () => { if (!run && strokes.length) { strokes = []; hud(); } },
   p: play, r: rewind,
@@ -90,7 +91,7 @@ ui.onclick = e => { const b = e.target.closest('[data-a]'); if (b) { initAudio()
 onkeydown = e => {
   const k = e.key;
   if (scr == 2 || (scr == 3 && !over)) {
-    if (k >= '1' && k <= '7' && L._ink[k - 1]) act.c(k - 1);
+    if (k >= '1' && k <= '8' && (L._ink[k - 1] ?? 1)) act.c(k - 1); // 8 = eraser (no ink entry, so it is always open)
     else if (k == 'z') act.u(); else if (k == 'c') act.x();
     else if (k == ' ') { e.preventDefault(); run ? rewind() : play(); }
     else if (k == 'Escape') act.bk();
@@ -100,9 +101,13 @@ onkeydown = e => {
 // Drawing input (Pointer Events: mouse, touch, pen)
 const wp = e => [(e.clientX - ox) / sc, (e.clientY - oy) / sc];
 cv.onpointerdown = e => {
-  if (scr < 2 || run || inkLeft(col) <= .3) return;
-  initAudio(); try { cv.setPointerCapture(e.pointerId); } catch (x) { }
-  const [x, y] = wp(e); cur = mkStroke(col, [x, y]);
+  if (scr < 2 || run) return;
+  initAudio(); const [x, y] = wp(e);
+  // Eraser (colour 7): a tap removes every stroke within 0.8 u of it.
+  if (col == 7) { strokes = strokes.filter(s => !near(s, x, y, .8)); hud(); return; }
+  if (inkLeft(col) <= .3) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (x) { }
+  cur = mkStroke(col, [x, y]);
 };
 cv.onpointermove = e => {
   if (!cur) return;

@@ -837,3 +837,51 @@ Size with 40 levels, the platform-aware copy and the menu column (`-O2`): 12,968
   `tools/wavedash-leaderboards.mjs`: `levels` and `stars` are visible; `daily` is created by
   the first daily win after this fix. The live check that remains is a real signed-in play on
   wavedash.com — the headless sandbox still cannot log in.
+
+## 23 Playtest feedback: skipping, an eraser, the red launcher (2026-09-06)
+
+- **Reports.** Two testers on the js13k Discord. One finished all 30, "pretty sure there was a run
+  of like 7 levels where my answer was always 'umm, little red bounce at the start'". The other:
+  removing a specific platform instead of only the last one; the early levels "passed by one
+  jumpy platform"; a way to skip a level; an in-game screenshot instead of an AI cover.
+- **Measured, not guessed.** `tools/redsweep.mjs` drops a 2 u dab of each available colour at
+  every half-unit position and three tilts into every level. A tilted red dab on flat ground is
+  a launcher (0.6 u of tilt is the drop red needs; the angled bounce leaves at 13 u/s and rises
+  10 u). It won levels 1, 3, 4, 5, 7, 14, 28 and 38; a single orange dab won 8 and 9. That is
+  the tester's run of seven: 1, 3, 4, 5, then 7, 8, 9 (orange hop), with 6 and 10 needing red
+  anyway. Full table in the session; the tool stays in `tools/`.
+- **Fixed where red is not the lesson, and nowhere else.** Level 1 `O14 R6 → O14 Y6`, level 7
+  `Y30 O6 R4 → Y30 O6`, level 8 `Y8 O4 → Y8 V4`, level 5 gains a 3.5 u ceiling so the bounce
+  from a pad laid on the ledge top hits it (the pads hung off the ledge wall — the lesson —
+  still work). Helpers were swapped rather than removed because the test requires two colours
+  per level and the helper ink is what makes a ★ possible (level 1's bridge is 12 of 14 orange).
+  Every replacement helper was swept: yellow on level 1 wins nowhere; violet is the only colour
+  that cannot extend the Trapdoor ledge (green 477 positions, blue 151, indigo 145).
+- **Not fixed, on purpose.** Levels 3, 4, 6, 10 are red levels; a red answer is right. Level 9
+  (Drawbridge) and levels 14, 28, 38 have single-dab answers too, but the sim has no fall damage,
+  so any landing a crumble or a bounce can reach, a shorter bridge or a fallen pad can reach as
+  well — every geometry tried (ceilings, narrower ledges, moved pedestals, spikes to water)
+  either broke the stored solution or moved the cheap answer by a unit. A Trapdoor redesign with
+  a wall at the far end and a timed orange+yellow split was built and scanned (10 of 11 splits
+  win) and dropped for the same reason: a 2 u orange dab's dash carry still landed on the
+  pedestal. Those levels stay as they are; the red-launcher is a mechanic, not a bug.
+- **Skip.** A level opens when the one before it or the one before that is done (`lv` and
+  `selectUI`): any single level can be skipped from the grid, never two in a row. Continue now
+  opens the level after the furthest gem (`lastIndexOf(1) + 1`) instead of the first gap, so a
+  skipped level does not pull the player back every time. A Skip button in the HUD was priced
+  (~40 bytes) and rejected: the coloured next dot in the grid does the job.
+- **Eraser.** Colour 7 in the palette (⌫, key 8). A tap on the canvas removes every stroke
+  within 0.8 u of it (`near` from sim.js, now exported; zero bytes — the strip regex drops the
+  keyword). No note plays for the erased stroke (it did in the first cut: 15 bytes).
+- **Cover.** Nothing in code: the advice is to replace the AI cover with an in-game capture —
+  `tools/shot.mjs` produces one; a mid-flight shot of level 30 or 40 with the paint down reads
+  best. The unicorn drawing itself is unchanged (it is 1 u tall on a 32 u stage; making it
+  prettier costs bytes and does not fix the cover).
+- **Bytes.** Eraser + skip + ceiling came to +79 at -O1 (13,339, over the limit by 27). Cut:
+  ten hints shortened without losing their instruction ("Draw a bridge, then Play", "Green: the
+  unicorn climbs it", "Every colour opens the gate", …), the eraser's note, `k == 8 ||` →
+  `?? 1`. Competition zip **13,281 at -O2** (31 under; was 13,260 with 52 under).
+- **Tests.** Suite A passes (all 40 solutions, all still fail empty; the swapped helpers are
+  never used by a stored solution). Suite B gains `erase-skip`: two strokes, eraser tap removes
+  exactly the tapped one and then the other; with only level 1 done the grid opens level 3 and
+  locks level 4, level 3 loads, and Continue opens level 2.

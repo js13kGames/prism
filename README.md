@@ -12,8 +12,9 @@ edges. All the agency is in the paint.
 
 1. **Draw phase** — pick a colour from the palette and draw freehand on the level.
    Each colour has an ink bar; ink drains by stroke length. Undo (↶) removes the
-   last stroke, Clear (✕) removes them all. Paint cannot be drawn inside solid blocks
-   (except indigo, which is meant to go through them).
+   last stroke, Clear (✕) removes them all, and the eraser (⌫) removes whichever
+   stroke you tap. Paint cannot be drawn inside solid blocks (except indigo, which
+   is meant to go through them).
 2. **Paint has weight.** A stroke that does not touch the ground, a wall, or another
    supported stroke is drawn faded: when you press Play it falls until it lands on
    something. Hang shelves from walls, start ramps on the floor, and remember that
@@ -24,7 +25,10 @@ edges. All the agency is in the paint.
 4. **Rewind** at any time to go back to drawing.
 5. A **★** is earned when you use at most 60 % of the level's total ink.
 
-40 hand-made levels in eight acts teach the colours one at a time, then combine them. **Daily** is two generated
+40 hand-made levels in eight acts teach the colours one at a time, then combine them. A level
+unlocks when the one before it *or the one before that* is done, so a level that has you stuck
+can be skipped (just not two in a row); **Continue** on the title picks up past your furthest
+gem. **Daily** is two generated
 levels every day (same for everyone), the second one tighter. **Online** is a best-of-five race with the levels
 getting harder each round: everyone in a room gets
 the same generated level and draws at the same time, and the first unicorn to reach the
@@ -40,6 +44,7 @@ round, and a rematch needs both players to press Rematch.
 |---|---|
 | Mouse / finger / pen on the canvas | draw a stroke (Pointer Events) |
 | Palette buttons or keys **1–7** | select colour |
+| ⌫ button or key **8**, then tap a stroke | eraser: remove that stroke |
 | **Z** / **C** | undo / clear |
 | **Space** | Play / Rewind |
 | **Esc** | back |

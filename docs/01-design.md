@@ -69,7 +69,7 @@ Indigo (19), Violet (23), Gate mechanic (27).
 
 1. **Title** — "PRISM", a unicorn idling on a rainbow arc, tap to start, small
    "Online" and "Daily" buttons. Sound toggle icon.
-2. **Level select** — 30 rainbow-coloured dots in a grid. Locked dots grey. Completed
+2. **Level select** — 30 rainbow-coloured dots in a grid. Locked dots grey; a dot opens when the level before it or the one before that is done (one skip at a time). Completed
    dots coloured, starred ones with a small star. (The title's Daily button shows a ✓ once today's daily is done.)
 3. **Game** — canvas + HUD. HUD top: level name, hint text (short, disappears after
    first Play). HUD bottom (draw phase): palette buttons with ink bars, Undo, Clear,

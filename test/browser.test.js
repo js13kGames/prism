@@ -149,6 +149,29 @@ async function runBrowser(name) {
     if (await page.evaluate(() => __prism.strokes.length)) throw new Error('clear left strokes');
   });
 
+  await test('erase-skip', async page => {
+    // Eraser: a tap on a stroke removes just that stroke. Skip rule: with only level 1 done, level 3 is open and
+    // level 4 is not; Continue goes past the furthest gem (level 2), not to the first gap.
+    await boot(page); await openLevel(page, 0);
+    await page.click('[data-a=c][data-v="1"]');
+    await drag(page, line(10, 12, 16, 12)); await drag(page, line(10, 10, 16, 10));
+    await page.click('[data-a=c][data-v="7"]');
+    await drag(page, line(13, 10, 13, 10, 1));
+    if (await page.evaluate(() => __prism.strokes.length) != 1) throw new Error('eraser did not remove exactly the tapped stroke');
+    await drag(page, line(13, 12, 13, 12, 1));
+    if (await page.evaluate(() => __prism.strokes.length)) throw new Error('eraser left the other stroke');
+    await page.evaluate(() => localStorage.prism26_progress = '{"done":[1]}');
+    await boot(page);
+    await page.click('[data-a=go]'); await page.waitForSelector('.a');
+    const cls = await page.$$eval('[data-a=lv]', b => b.map(x => x.className));
+    if (cls[2].includes(' l') || !cls[3].includes(' l')) throw new Error('skip rule: level 3 should be open and level 4 locked: ' + cls.slice(0, 4));
+    await page.click('[data-a=lv][data-v="2"]'); await page.waitForSelector('[data-a=p]');
+    await page.click('[data-a=bk]'); await page.waitForSelector('.a');
+    await page.click('[data-a=bk]'); await page.waitForSelector('[data-a=co]');
+    await page.click('[data-a=co]'); await page.waitForSelector('[data-a=p]');
+    if (!/Ramp/.test(await page.textContent('.h'))) throw new Error('Continue did not open level 2');
+  });
+
   if (!QUICK) await test('all-levels', async page => {
     await boot(page);
     for (let i = 0; i < SOLUTIONS.length; i++) {

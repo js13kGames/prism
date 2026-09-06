@@ -79,7 +79,7 @@ function blocked(run, x, y) {
 // Unsupported strokes fall (inert while falling) until they land. Falling strokes never collide with the unicorn.
 
 // Is the point within d of any segment of stroke s?
-function near(s, x, y, d) {
+export function near(s, x, y, d) {
   const p = s._p;
   for (let i = 0; i + 3 < p.length; i += 2) { const [cx, cy] = closest(x, y, p[i], p[i + 1], p[i + 2], p[i + 3]); if (hypot(x - cx, y - cy) < d) return 1; }
   return 0;
